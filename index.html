@@ -171,7 +171,7 @@
         .status-indicator.visible {
             opacity: 1;
         }
-        #settingsModal {
+        .modal {
             display: none;
             position: fixed;
             z-index: 100;
@@ -254,20 +254,14 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
+        .modal-buttons button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
         
         /* Speed slider modal */
-        #speedModal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            animation: fadeIn 0.3s;
-        }
         .speed-slider-container {
             display: flex;
             align-items: center;
@@ -308,6 +302,75 @@
             cursor: pointer;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
             border: none;
+        }
+
+        /* Login Screen */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .login-container {
+            background: rgba(42, 42, 66, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .login-logo h1 {
+            font-size: 2rem;
+            color: #64ffda;
+            margin: 0;
+        }
+        .login-logo p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin: 5px 0 0;
+        }
+        .login-form .form-group {
+            margin: 15px 0;
+        }
+        .login-error {
+            color: #ff5252;
+            margin: 10px 0;
+            font-size: 14px;
+            display: none;
+        }
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .login-button:active {
+            transform: translateY(1px);
+        }
+        .login-button:disabled {
+            background: #555;
+            cursor: not-allowed;
         }
 
         /* Robot styles */
@@ -650,6 +713,24 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container">
+            <div class="login-logo">
+                <h1>Trợ lý ảo Mít</h1>
+                <p>Đăng nhập để tiếp tục</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginPassword">Mật khẩu</label>
+                    <input type="password" id="loginPassword" placeholder="Nhập mật khẩu để truy cập">
+                </div>
+                <div id="loginError" class="login-error">Mật khẩu không đúng. Vui lòng thử lại.</div>
+                <button type="submit" id="loginButton" class="login-button">Đăng nhập</button>
+            </form>
+        </div>
+    </div>
+
     <div id="canvas-container">
         <div id="robot-container">
             <div class="robot-head">
@@ -702,22 +783,39 @@
         </select>
     </div>
     
-    <div id="settingsModal">
+    <div id="settingsModal" class="modal">
         <div class="modal-content">
             <h2>Cài đặt</h2>
             <div class="form-group">
                 <label for="apiUrlInput">URL API:</label>
                 <input type="text" id="apiUrlInput" placeholder="Nhập URL API (ví dụ: http://localhost:5000)">
             </div>
+            <!-- Phần cài đặt mật khẩu (chỉ hiện khi là thiết bị chủ) -->
+            <div id="passwordSettings" style="display: none;">
+                <div class="form-group">
+                    <label for="currentPassword">Mật khẩu hiện tại:</label>
+                    <input type="password" id="currentPassword" placeholder="Nhập mật khẩu hiện tại">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới:</label>
+                    <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu mới:</label>
+                    <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu mới">
+                </div>
+            </div>
             <div class="modal-buttons">
+                <button id="savePasswordBtn" class="save" style="display: none;">Đổi mật khẩu</button>
                 <button id="saveSettingsBtn" class="save">Lưu</button>
                 <button id="closeSettingsBtn" class="close">Đóng</button>
+                <button id="logoutBtn" class="close">Đăng xuất</button>
             </div>
         </div>
     </div>
     
     <!-- Speed modal -->
-    <div id="speedModal">
+    <div id="speedModal" class="modal">
         <div class="modal-content">
             <h2>Điều chỉnh tốc độ nói</h2>
             <div class="form-group">
@@ -754,6 +852,17 @@
         // Speech rate
         let speechRate = localStorage.getItem('speechRate') || 1.0;
         
+        // Auth token
+        let authToken = localStorage.getItem('authToken') || '';
+        let isHost = false;
+
+        // Device ID for better tracking
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'device_' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        
         // DOM elements
         const robotMouth = document.querySelector('.robot-mouth');
         const robotEyeLeft = document.querySelector('.robot-eye.left');
@@ -764,6 +873,205 @@
         const robotLegRight = document.querySelector('.robot-leg.right');
         const robotBody = document.querySelector('.robot-body');
         const robotHead = document.querySelector('.robot-head');
+        
+        // Auth-related elements
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginForm = document.getElementById('loginForm');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginButton = document.getElementById('loginButton');
+        const loginError = document.getElementById('loginError');
+        
+        // Check authentication status on page load
+        async function checkAuthentication() {
+            try {
+                // Skip if no token
+                if (!authToken) {
+                    showLoginScreen();
+                    return;
+                }
+                
+                const response = await fetch(`${apiUrl}/auth/check`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    isHost = data.is_host;
+                    hideLoginScreen();
+                    
+                    // Show password settings if host
+                    if (isHost) {
+                        document.getElementById('passwordSettings').style.display = 'block';
+                        document.getElementById('savePasswordBtn').style.display = 'block';
+                    }
+                    
+                    addMessage(`Chào mừng trở lại với Trợ lý ảo Mít${isHost ? ' (Thiết bị chủ)' : ''}`, false);
+                } else {
+                    // Token invalid, show login
+                    localStorage.removeItem('authToken');
+                    showLoginScreen();
+                }
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                showLoginScreen();
+            }
+        }
+        
+        // Show login screen
+        function showLoginScreen() {
+            loginOverlay.style.display = 'flex';
+        }
+        
+        // Hide login screen
+        function hideLoginScreen() {
+            loginOverlay.style.display = 'none';
+        }
+        
+        // Handle login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginButton.disabled = true;
+            loginError.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${apiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: loginPassword.value,
+                        client_id: deviceId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    isHost = data.is_host;
+                    
+                    hideLoginScreen();
+                    
+                    // Show password settings if host
+                    if (isHost) {
+                        document.getElementById('passwordSettings').style.display = 'block';
+                        document.getElementById('savePasswordBtn').style.display = 'block';
+                    }
+                    
+                    addMessage(`Chào mừng đến với Trợ lý ảo Mít${isHost ? ' (Thiết bị chủ)' : ''}`, false);
+                } else {
+                    loginError.textContent = data.message || 'Mật khẩu không đúng. Vui lòng thử lại.';
+                    loginError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                loginError.textContent = 'Không thể kết nối với server. Vui lòng kiểm tra URL API và thử lại.';
+                loginError.style.display = 'block';
+            } finally {
+                loginButton.disabled = false;
+            }
+        });
+        
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await fetch(`${apiUrl}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            } finally {
+                // Always clear local storage and show login screen
+                localStorage.removeItem('authToken');
+                authToken = '';
+                isHost = false;
+                showLoginScreen();
+                document.getElementById('passwordSettings').style.display = 'none';
+                document.getElementById('savePasswordBtn').style.display = 'none';
+                // Reset form
+                loginPassword.value = '';
+                // Clear chat
+                document.getElementById('chatContainer').innerHTML = '';
+            }
+        });
+        
+        // Handle password change
+        document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                addMessage('Vui lòng điền đầy đủ thông tin để đổi mật khẩu.', false);
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                addMessage('Mật khẩu mới và xác nhận mật khẩu không khớp.', false);
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                addMessage('Mật khẩu mới phải có ít nhất 6 ký tự.', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${apiUrl}/auth/change_password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Clear password fields
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                    
+                    // Close settings modal
+                    document.getElementById('settingsModal').style.display = 'none';
+                    
+                    // Show success message
+                    addMessage(data.message || 'Đã thay đổi mật khẩu thành công. Vui lòng đăng nhập lại.', false);
+                    
+                    // Force re-login
+                    setTimeout(() => {
+                        localStorage.removeItem('authToken');
+                        authToken = '';
+                        isHost = false;
+                        showLoginScreen();
+                    }, 2000);
+                } else {
+                    addMessage(data.message || 'Không thể thay đổi mật khẩu.', false);
+                }
+            } catch (error) {
+                console.error('Password change error:', error);
+                addMessage('Lỗi khi thay đổi mật khẩu. Vui lòng thử lại sau.', false);
+            }
+        });
         
         // Create stars for the background
         function createStars() {
@@ -791,9 +1099,6 @@
             }
         }
         
-        // Create stars when page loads
-        window.addEventListener('load', createStars);
-
         // Robot animations
         function startAnimation(type) {
             // Stop any current animation
@@ -852,7 +1157,8 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ state: state })
                 })
@@ -920,6 +1226,11 @@
         }
 
         function toggleListening() {
+            if (!authToken) {
+                showLoginScreen();
+                return;
+            }
+            
             if (isListening) {
                 recognition.stop();
                 isListening = false;
@@ -937,6 +1248,11 @@
 
         // Process command
         async function processCommand(text) {
+            if (!authToken) {
+                showLoginScreen();
+                return;
+            }
+            
             try {
                 console.log('Sending request to server with query:', text);
                 console.log('Using API URL:', apiUrl);
@@ -947,12 +1263,23 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ query: text })
                 });
                 
                 if (!response.ok) {
+                    // Check if unauthorized
+                    if (response.status === 401) {
+                        const errorData = await response.json();
+                        if (errorData.requires_auth) {
+                            localStorage.removeItem('authToken');
+                            authToken = '';
+                            showLoginScreen();
+                            throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+                        }
+                    }
                     throw new Error(`Server responded with status: ${response.status} (${response.statusText})`);
                 }
                 
@@ -1100,6 +1427,10 @@
         apiUrlInput.value = apiUrl;
         
         settingsBtn.addEventListener('click', () => {
+            if (!authToken) {
+                showLoginScreen();
+                return;
+            }
             settingsModal.style.display = 'block';
         });
         
@@ -1113,6 +1444,9 @@
                 apiUrl = newApiUrl;
                 localStorage.setItem('mitApiUrl', apiUrl);
                 addMessage(`Đã cập nhật URL API thành ${apiUrl}`, false);
+                
+                // Re-check authentication with new API URL
+                checkAuthentication();
             }
             settingsModal.style.display = 'none';
         });
@@ -1129,6 +1463,10 @@
         speedValue.textContent = speechRate;
         
         speedBtn.addEventListener('click', () => {
+            if (!authToken) {
+                showLoginScreen();
+                return;
+            }
             speedModal.style.display = 'block';
         });
         
@@ -1146,7 +1484,8 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ rate: newSpeechRate })
                 })
@@ -1186,9 +1525,10 @@
             console.log('Loaded voices:', voices.length);
         };
         
-        // Welcome message
+        // Create stars and check authentication when page loads
         window.addEventListener('load', () => {
-            addMessage('Trợ lý ảo Mis đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
+            createStars();
+            checkAuthentication();
         });
     </script>
 </body>
