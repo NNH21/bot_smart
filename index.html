@@ -1326,36 +1326,56 @@
         // Speech synthesis
         function speak(audioUrl, textContent, action) {
             if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                let audioStarted = false;
+                console.log('Đang tải âm thanh từ:', audioUrl);
                 
-                audio.onplay = () => {
-                    audioStarted = true;
+                // Tạo đối tượng âm thanh với các xử lý lỗi tốt hơn
+                const audio = new Audio();
+                
+                // Đăng ký sự kiện trước khi thiết lập nguồn
+                audio.oncanplay = () => {
+                    console.log('Âm thanh đã sẵn sàng để phát');
                     startAnimation(action);
+                    audio.play()
+                        .catch(error => {
+                            console.error('Lỗi khi phát âm thanh sau khi sẵn sàng:', error);
+                            speakWithWebSpeechAPI(textContent, action);
+                            updateLcdStatus("READY");
+                        });
                 };
                 
                 audio.onended = () => {
+                    console.log('Âm thanh đã phát xong');
                     beepSound.play();
                     setTimeout(() => {
                         stopAnimation();
+                        updateLcdStatus("READY");
                     }, 1000);
                 };
                 
                 audio.onerror = (e) => {
-                    console.error('Error playing audio:', e);
-                    if (!audioStarted) {
-                        speakWithWebSpeechAPI(textContent, action);
-                    }
+                    console.error('Lỗi khi tải âm thanh:', e);
+                    console.error('Chi tiết lỗi:', audio.error);
+                    speakWithWebSpeechAPI(textContent, action);
                     updateLcdStatus("READY");
                 };
                 
-                audio.play().catch(error => {
-                    console.error('Error playing audio:', error);
-                    if (!audioStarted) {
+                // Thiết lập nguồn sau khi đăng ký các sự kiện
+                audio.crossOrigin = "anonymous";  // Thêm để xử lý CORS nếu cần
+                audio.src = audioUrl;
+                
+                // Thêm timeout để chuyển sang Web Speech API nếu âm thanh không tải được trong 3 giây
+                const audioTimeout = setTimeout(() => {
+                    if (!audio.duration) {
+                        console.warn('Âm thanh không tải được sau 3 giây, chuyển sang Web Speech API');
+                        audio.src = '';
                         speakWithWebSpeechAPI(textContent, action);
                     }
-                    updateLcdStatus("READY");
-                });
+                }, 3000);
+                
+                // Xóa timeout nếu âm thanh tải thành công
+                audio.onloadedmetadata = () => {
+                    clearTimeout(audioTimeout);
+                };
             } else {
                 speakWithWebSpeechAPI(textContent, action);
             }
