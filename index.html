@@ -9,106 +9,276 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
         }
         body {
             overflow: hidden;
             background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
             color: white;
+            transition: background 0.8s ease;
         }
         #canvas {
             width: 100vw;
-            height: 60vh;
+            height: 65vh;
             display: block;
+            transition: height 0.3s ease;
         }
         .chat-container {
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 40vh;
-            background: rgba(255, 255, 255, 0.1);
+            height: 35vh;
+            background: rgba(15, 15, 30, 0.85);
             backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
             overflow-y: auto;
+            transition: height 0.3s ease;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
         }
         .chat-message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 10px;
-            max-width: 80%;
+            margin: 12px 0;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .user-message {
-            background: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50, #3d9440);
             color: white;
             margin-left: auto;
             text-align: right;
+            border-bottom-right-radius: 4px;
         }
         .assistant-message {
-            background: #2196F3;
+            background: linear-gradient(135deg, #2979FF, #1565C0);
             color: white;
             margin-right: auto;
+            border-bottom-left-radius: 4px;
         }
         .controls {
             position: absolute;
             top: 20px;
             right: 20px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            z-index: 10;
         }
         .controls button {
             padding: 10px 20px;
-            background: #2196F3;
+            background: rgba(33, 150, 243, 0.8);
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
             color: white;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .controls button:hover {
-            background: #1976D2;
+            background: rgba(33, 150, 243, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        .controls button:active {
+            transform: translateY(1px);
         }
         .theme-selector {
             position: absolute;
             top: 20px;
             left: 20px;
+            z-index: 10;
         }
         .theme-selector select {
-            padding: 5px;
-            border-radius: 5px;
-            background: #2196F3;
+            padding: 10px 16px;
+            border-radius: 50px;
+            background: rgba(33, 150, 243, 0.8);
             color: white;
             border: none;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 30px;
+            font-weight: 500;
+        }
+        .theme-selector select:hover {
+            background: rgba(33, 150, 243, 1);
+            transform: translateY(-2px);
+        }
+        .theme-selector select:focus {
+            outline: none;
+        }
+        .theme-selector::after {
+            content: '▼';
+            font-size: 12px;
+            color: white;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        #micBtn.active {
+            background: rgba(244, 67, 54, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+        .status-indicator {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        .status-indicator.visible {
+            opacity: 1;
+        }
+        #settingsModal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #2a2a42, #1a1a2e);
+            border-radius: 15px;
+            margin: 10% auto;
+            padding: 25px;
+            width: 80%;
+            max-width: 500px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-weight: 500;
+            color: #64ffda;
+            border-bottom: 1px solid rgba(100, 255, 218, 0.3);
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #64ffda;
+            box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .modal-buttons button.save {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        }
+        .modal-buttons button.close {
+            background: linear-gradient(135deg, #f44336, #C62828);
+        }
+        .modal-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <div class="status-indicator" id="statusIndicator">Đang lắng nghe...</div>
     <div class="controls">
-        <button id="micBtn">Bật Micro</button>
-        <button id="clearChatBtn">Xóa Chat</button>
-        <button id="settingsBtn">Cài đặt</button>
+        <button id="micBtn">🎤 Bật Micro</button>
+        <button id="clearChatBtn">🗑️ Xóa Chat</button>
+        <button id="settingsBtn">⚙️ Cài đặt</button>
     </div>
     <div class="theme-selector">
         <select id="themeSelect">
-            <option value="space">Không gian</option>
-            <option value="forest">Rừng</option>
-            <option value="ocean">Đại dương</option>
+            <option value="space">🌌 Không gian</option>
+            <option value="forest">🌲 Rừng</option>
+            <option value="ocean">🌊 Đại dương</option>
+            <option value="night">🌙 Đêm sao</option>
+            <option value="tech">💻 Công nghệ</option>
         </select>
     </div>
     
-    <!-- Thêm modal cài đặt -->
-    <div id="settingsModal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7);">
-        <div style="background-color:#2a2a42; border-radius:10px; margin:10% auto; padding:20px; width:80%; max-width:500px; color:white;">
+    <div id="settingsModal">
+        <div class="modal-content">
             <h2>Cài đặt</h2>
-            <div style="margin:15px 0;">
+            <div class="form-group">
                 <label for="apiUrlInput">URL API:</label>
-                <input type="text" id="apiUrlInput" style="width:100%; padding:8px; margin-top:5px; background:#333; color:white; border:1px solid #555;" 
-                    placeholder="Nhập URL API (ví dụ: http://yourserver.com:5000)">
+                <input type="text" id="apiUrlInput" placeholder="Nhập URL API (ví dụ: http://localhost:5000)">
             </div>
-            <div style="display:flex; justify-content:flex-end; margin-top:20px;">
-                <button id="saveSettingsBtn" style="padding:8px 15px; background:#4CAF50; border:none; color:white; margin-right:10px; cursor:pointer;">Lưu</button>
-                <button id="closeSettingsBtn" style="padding:8px 15px; background:#f44336; border:none; color:white; cursor:pointer;">Đóng</button>
+            <div class="modal-buttons">
+                <button id="saveSettingsBtn" class="save">Lưu</button>
+                <button id="closeSettingsBtn" class="close">Đóng</button>
             </div>
         </div>
     </div>
@@ -116,6 +286,7 @@
     <div class="chat-container" id="chatContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.3/dist/gsap.min.js"></script>
     <script>
         // Biến toàn cục
         let isListening = false;
@@ -480,6 +651,10 @@
                 document.body.style.background = 'radial-gradient(circle, #2e462e 0%, #1a2e1a 100%)';
             } else if (theme === 'ocean') {
                 document.body.style.background = 'radial-gradient(circle, #1a3c4e 0%, #0f2a3a 100%)';
+            } else if (theme === 'night') {
+                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
+            } else if (theme === 'tech') {
+                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
             }
         });
         
