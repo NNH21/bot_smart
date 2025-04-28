@@ -249,6 +249,61 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Thêm style cho slider popup */
+        #speedModal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+        .speed-slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .speed-value {
+            width: 60px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-left: 15px;
+            color: #64ffda;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #64ffda;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #64ffda;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -256,6 +311,7 @@
     <div class="status-indicator" id="statusIndicator">Đang lắng nghe...</div>
     <div class="controls">
         <button id="micBtn">🎤 Bật Micro</button>
+        <button id="speedBtn">🔊 Tốc độ</button>
         <button id="clearChatBtn">🗑️ Xóa Chat</button>
         <button id="settingsBtn">⚙️ Cài đặt</button>
     </div>
@@ -283,6 +339,27 @@
         </div>
     </div>
     
+    <!-- Thêm modal điều chỉnh tốc độ -->
+    <div id="speedModal">
+        <div class="modal-content">
+            <h2>Điều chỉnh tốc độ nói</h2>
+            <div class="form-group">
+                <label for="speedSlider">Tốc độ (0.4 - 1.8):</label>
+                <div class="speed-slider-container">
+                    <input type="range" id="speedSlider" class="slider" min="0.4" max="1.8" step="0.1" value="1.0">
+                    <span class="speed-value" id="speedValue">1.0</span>
+                </div>
+                <p style="margin-top: 10px; color: #aaa; font-size: 14px;">
+                    Tốc độ càng thấp, giọng nói càng chậm. Tốc độ càng cao, giọng nói càng nhanh.
+                </p>
+            </div>
+            <div class="modal-buttons">
+                <button id="saveSpeedBtn" class="save">Lưu</button>
+                <button id="closeSpeedBtn" class="close">Đóng</button>
+            </div>
+        </div>
+    </div>
+    
     <div class="chat-container" id="chatContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -296,6 +373,9 @@
         
         // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
+        
+        // Thêm biến tốc độ nói
+        let speechRate = localStorage.getItem('speechRate') || 1.0;
         
         // Thêm hàm gửi trạng thái tới ESP8266 qua API
         function updateLcdStatus(state) {
@@ -662,6 +742,7 @@
         // Hàm phát âm thanh bằng Web Speech API
         function speakWithWebSpeechAPI(text, action) {
             const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = speechRate; // Áp dụng tốc độ nói
             // Lấy danh sách giọng đọc
             const voices = speechSynthesis.getVoices();
             console.log('Available voices:', voices);
@@ -749,6 +830,68 @@
         window.addEventListener('click', (e) => {
             if (e.target === settingsModal) {
                 settingsModal.style.display = 'none';
+            }
+        });
+        
+        // Xử lý modal tốc độ
+        const speedBtn = document.getElementById('speedBtn');
+        const speedModal = document.getElementById('speedModal');
+        const closeSpeedBtn = document.getElementById('closeSpeedBtn');
+        const saveSpeedBtn = document.getElementById('saveSpeedBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        
+        // Hiển thị giá trị tốc độ hiện tại
+        speedSlider.value = speechRate;
+        speedValue.textContent = speechRate;
+        
+        speedBtn.addEventListener('click', () => {
+            speedModal.style.display = 'block';
+        });
+        
+        closeSpeedBtn.addEventListener('click', () => {
+            speedModal.style.display = 'none';
+        });
+        
+        saveSpeedBtn.addEventListener('click', () => {
+            const newSpeechRate = parseFloat(speedSlider.value);
+            if (newSpeechRate) {
+                speechRate = newSpeechRate;
+                localStorage.setItem('speechRate', speechRate);
+                
+                // Send the new speech rate to the backend
+                fetch(`${apiUrl}/set_speech_rate`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ rate: newSpeechRate })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addMessage(`Đã cập nhật tốc độ nói thành ${speechRate}`, false);
+                    } else {
+                        addMessage(`Lỗi: ${data.message}`, false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating speech rate:', error);
+                    addMessage('Không thể kết nối với server để cập nhật tốc độ nói.', false);
+                });
+            }
+            speedModal.style.display = 'none';
+        });
+        
+        speedSlider.addEventListener('input', () => {
+            speedValue.textContent = speedSlider.value;
+        });
+        
+        // Đóng modal nếu click bên ngoài
+        window.addEventListener('click', (e) => {
+            if (e.target === speedModal) {
+                speedModal.style.display = 'none';
             }
         });
         
