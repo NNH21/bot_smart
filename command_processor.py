@@ -1,10 +1,43 @@
 import datetime
 import re
-from config import ASSISTANT_NAME, SPEECH_RATE, LAST_DATE
+import google.generativeai as genai
+import logging
+from config import ASSISTANT_NAME, SPEECH_RATE, LAST_DATE, GEMINI_API_KEY
 from weather import get_weather_forecast, get_weatherapi_forecast
 from time_utils import get_time_in_timezone, get_relative_date
 from history import get_vietnamese_holiday_info, get_international_holiday_info, get_historical_date_info
 from web_utils import open_youtube_video, open_web_search, open_website
+
+# Thiết lập logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Cấu hình Gemini API
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+def get_gemini_response(query, force_detailed=False):
+    try:
+        if force_detailed:
+            prompt = f"""
+            Trả lời câu hỏi sau đây bằng tiếng Việt một cách chi tiết, rõ ràng và đầy đủ:
+            {query}
+            
+            Lưu ý: Cung cấp thông tin chính xác, có ngữ cảnh và giải thích đầy đủ. Nếu cần, đưa ra ví dụ hoặc thông tin bổ sung.
+            Vui lòng LUÔN LUÔN trả lời bằng tiếng Việt, không sử dụng tiếng Anh hoặc ngôn ngữ khác.
+            """
+        else:
+            prompt = f"""
+            Trả lời câu hỏi sau đây bằng tiếng Việt ngắn gọn và chính xác:
+            {query}
+            
+            Lưu ý: Giữ câu trả lời trong khoảng 1-3 câu, trừ khi câu hỏi yêu cầu chi tiết hơn.
+            Vui lòng LUÔN LUÔN trả lời bằng tiếng Việt, không sử dụng tiếng Anh hoặc ngôn ngữ khác.
+            """
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        logging.error(f"Lỗi khi gọi Gemini API: {e}")
+        return "Không thể lấy câu trả lời từ Gemini API. Vui lòng thử lại sau."
 
 def process_command(text):
     global SPEECH_RATE, LAST_DATE
@@ -351,4 +384,6 @@ def process_command(text):
     if any(query in text_lower for query in name_queries):
         return f"Tôi là {ASSISTANT_NAME}"
 
-    return "Xin lỗi, tôi chưa hiểu yêu cầu của bạn. Vui lòng thử lại."
+    # Nếu không có câu trả lời sẵn, gọi API Gemini
+    logging.info(f"Gửi câu hỏi ngoài lề đến Gemini API: {text}")
+    return get_gemini_response(text, force_detailed)

@@ -1,6 +1,7 @@
 import urllib.parse
 import webbrowser
 import logging
+import requests
 from config import session
 
 def open_youtube_video(query):

@@ -18,6 +18,7 @@ SPEECH_RATE = 1.0
 OPENWEATHERMAP_API_KEY = "292afcea31e70049e0995db453d7fca6"
 TIMEZONEDB_API_KEY = "NIS9LQW9KOHB"
 WEATHERAPI_KEY = "8c587eb97df52089f5566f5a54eda437"
+GEMINI_API_KEY = "AIzaSyD7w3vcBaJO4yx4KP3LLxEjYPdZGGpPcUU"  # API Key của Gemini
 
 # Cache thời tiết
 weather_cache = {}  # {key: (response, timestamp)}

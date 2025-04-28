@@ -3,6 +3,7 @@ import datetime
 import hashlib
 import urllib.parse
 import logging
+import time
 from config import session, weather_cache, CACHE_TIMEOUT, OPENWEATHERMAP_API_KEY, WEATHERAPI_KEY
 
 def get_coordinates(city):

@@ -87,6 +87,7 @@
     <div class="controls">
         <button id="micBtn">Bật Micro</button>
         <button id="clearChatBtn">Xóa Chat</button>
+        <button id="settingsBtn">Cài đặt</button>
     </div>
     <div class="theme-selector">
         <select id="themeSelect">
@@ -95,6 +96,23 @@
             <option value="ocean">Đại dương</option>
         </select>
     </div>
+    
+    <!-- Thêm modal cài đặt -->
+    <div id="settingsModal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7);">
+        <div style="background-color:#2a2a42; border-radius:10px; margin:10% auto; padding:20px; width:80%; max-width:500px; color:white;">
+            <h2>Cài đặt</h2>
+            <div style="margin:15px 0;">
+                <label for="apiUrlInput">URL API:</label>
+                <input type="text" id="apiUrlInput" style="width:100%; padding:8px; margin-top:5px; background:#333; color:white; border:1px solid #555;" 
+                    placeholder="Nhập URL API (ví dụ: http://yourserver.com:5000)">
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+                <button id="saveSettingsBtn" style="padding:8px 15px; background:#4CAF50; border:none; color:white; margin-right:10px; cursor:pointer;">Lưu</button>
+                <button id="closeSettingsBtn" style="padding:8px 15px; background:#f44336; border:none; color:white; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+    
     <div class="chat-container" id="chatContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -104,7 +122,10 @@
         let recognition;
         let speechSynthesis = window.speechSynthesis;
         const beepSound = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // Âm thanh "tít"
-
+        
+        // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
+        let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
+        
         // Khởi tạo Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
@@ -318,19 +339,40 @@
         // Gửi lệnh đến backend Flask
         async function processCommand(text) {
             try {
-                const response = await fetch('http://localhost:5000/process', {
+                console.log('Sending request to server with query:', text);
+                console.log('Using API URL:', apiUrl);
+                
+                const response = await fetch(`${apiUrl}/process`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ query: text })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status} (${response.statusText})`);
+                }
+                
                 const data = await response.json();
+                console.log('Received response from server:', data);
+                
                 const result = data.response;
+                let audioUrl = data.audio_url;
+                
+                // Đảm bảo URL âm thanh là tuyệt đối
+                if (audioUrl && !audioUrl.startsWith('http')) {
+                    audioUrl = `${apiUrl}${audioUrl}`;
+                }
+                
                 addMessage(result);
                 const action = determineAction(text, result);
-                speak(result, action);
+                speak(audioUrl, result, action);
             } catch (error) {
-                addMessage('Lỗi kết nối với server: ' + error.message);
-                speak('Lỗi kết nối với server.', 'surprise');
+                console.error('Error connecting to server:', error.message);
+                addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
+                speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
             }
         }
 
@@ -350,17 +392,63 @@
         }
 
         // Phát giọng nói và hành động
-        function speak(text, action) {
+        function speak(audioUrl, textContent, action) {
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                audio.onplay = () => {
+                    beepSound.play(); // Phát âm thanh "tít"
+                    if (action === 'speak') speakAnimation();
+                    else if (action === 'laugh') laughAnimation();
+                    else if (action === 'wave') waveAnimation();
+                    else if (action === 'dance') danceAnimation();
+                    else if (action === 'surprise') surpriseAnimation();
+                };
+                
+                audio.onerror = (e) => {
+                    console.error('Lỗi phát âm thanh:', e);
+                    // Fallback sang Web Speech API nếu không tải được audio
+                    speakWithWebSpeechAPI(textContent, action);
+                };
+                
+                audio.play().catch(error => {
+                    console.error('Lỗi khi phát âm thanh:', error);
+                    speakWithWebSpeechAPI(textContent, action);
+                });
+            } else {
+                speakWithWebSpeechAPI(textContent, action);
+            }
+        }
+        
+        // Hàm phát âm thanh bằng Web Speech API
+        function speakWithWebSpeechAPI(text, action) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'vi-VN';
+            // Lấy danh sách giọng đọc
+            const voices = speechSynthesis.getVoices();
+            console.log('Available voices:', voices);
+            
+            // Ưu tiên tìm giọng tiếng Việt
+            let voice = voices.find(v => v.lang === 'vi-VN');
+            if (!voice) {
+                voice = voices.find(v => v.lang.startsWith('vi'));
+            }
+            
+            if (voice) {
+                utterance.voice = voice;
+                utterance.lang = 'vi-VN';
+            } else {
+                console.warn('Không tìm thấy giọng tiếng Việt, sử dụng giọng mặc định');
+                utterance.lang = 'vi-VN'; // Vẫn đặt là tiếng Việt để tối đa hóa khả năng phát âm đúng
+            }
+            
             utterance.onstart = () => {
-                beepSound.play(); // Phát âm thanh "tít"
+                beepSound.play();
                 if (action === 'speak') speakAnimation();
                 else if (action === 'laugh') laughAnimation();
                 else if (action === 'wave') waveAnimation();
                 else if (action === 'dance') danceAnimation();
                 else if (action === 'surprise') surpriseAnimation();
             };
+            
             speechSynthesis.speak(utterance);
         }
 
@@ -379,6 +467,52 @@
             } else if (theme === 'ocean') {
                 document.body.style.background = 'radial-gradient(circle, #1a3c4e 0%, #0f2a3a 100%)';
             }
+        });
+        
+        // Xử lý modal cài đặt
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const apiUrlInput = document.getElementById('apiUrlInput');
+        
+        // Hiển thị giá trị API URL hiện tại
+        apiUrlInput.value = apiUrl;
+        
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.style.display = 'block';
+        });
+        
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+        
+        saveSettingsBtn.addEventListener('click', () => {
+            const newApiUrl = apiUrlInput.value.trim();
+            if (newApiUrl) {
+                apiUrl = newApiUrl;
+                localStorage.setItem('mitApiUrl', apiUrl);
+                addMessage(`Đã cập nhật URL API thành ${apiUrl}`, false);
+            }
+            settingsModal.style.display = 'none';
+        });
+        
+        // Đóng modal nếu click bên ngoài
+        window.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.style.display = 'none';
+            }
+        });
+        
+        // Tải danh sách giọng nói để sẵn sàng cho Web Speech API
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Loaded voices:', voices.length);
+        };
+        
+        // Thêm thông báo khi trang web đã sẵn sàng
+        window.addEventListener('load', () => {
+            addMessage('Trợ lý ảo Mít đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
         });
     </script>
 </body>
