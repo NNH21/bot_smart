@@ -121,7 +121,7 @@
         let isListening = false;
         let recognition;
         let speechSynthesis = window.speechSynthesis;
-        const beepSound = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // Âm thanh "tít"
+        const beepSound = new Audio('audio/beep.mp3'); // Âm thanh "tít" từ thư mục audio
         
         // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
@@ -399,12 +399,15 @@
                 
                 audio.onplay = () => {
                     audioStarted = true;
-                    beepSound.play(); // Phát âm thanh "tít"
                     if (action === 'speak') speakAnimation();
                     else if (action === 'laugh') laughAnimation();
                     else if (action === 'wave') waveAnimation();
                     else if (action === 'dance') danceAnimation();
                     else if (action === 'surprise') surpriseAnimation();
+                };
+                
+                audio.onended = () => {
+                    beepSound.play(); // Phát âm thanh "tít" khi bot hoàn thành câu trả lời
                 };
                 
                 audio.onerror = (e) => {
@@ -449,12 +452,15 @@
             }
             
             utterance.onstart = () => {
-                beepSound.play();
                 if (action === 'speak') speakAnimation();
                 else if (action === 'laugh') laughAnimation();
                 else if (action === 'wave') waveAnimation();
                 else if (action === 'dance') danceAnimation();
                 else if (action === 'surprise') surpriseAnimation();
+            };
+            
+            utterance.onend = () => {
+                beepSound.play(); // Phát âm thanh "tít" khi nói xong
             };
             
             speechSynthesis.speak(utterance);
