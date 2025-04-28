@@ -99,7 +99,7 @@ def process():
 
 @app.route('/audio/<filename>', methods=['GET'])
 def serve_audio(filename):
-    audio_path = os.path.join(AUDIO_DIR, filename)
+    audio_path = os.path.join('audio', filename)  # Define the audio_path variable
     if os.path.exists(audio_path):
         return send_file(audio_path, mimetype='audio/mpeg')
     else:
