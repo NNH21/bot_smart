@@ -3,1734 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trợ lý ảo Mít 3D - Phiên bản nâng cấp</title>
+    <title>Trợ lý ảo Mít 3D</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Arial', sans-serif;
         }
-        
         body {
             overflow: hidden;
             background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
             color: white;
-            transition: background 0.5s ease;
         }
-        
         #canvas {
             width: 100vw;
             height: 60vh;
             display: block;
-            touch-action: none;
         }
-        
-        .scene-info {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
         .chat-container {
             position: absolute;
             bottom: 0;
             width: 100%;
             height: 40vh;
-            background: rgba(20, 20, 40, 0.8);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-top: 2px solid rgba(79, 109, 245, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
             padding: 20px;
             overflow-y: auto;
-            transition: height 0.3s ease;
         }
-        
-        .chat-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .chat-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-        }
-        
-        .chat-container::-webkit-scrollbar-thumb {
-            background: rgba(79, 109, 245, 0.7);
-            border-radius: 4px;
-        }
-        
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .chat-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #4F6DF5;
-        }
-        
         .chat-message {
             margin: 10px 0;
-            padding: 12px 15px;
-            border-radius: 15px;
+            padding: 10px;
+            border-radius: 10px;
             max-width: 80%;
-            line-height: 1.4;
-            animation: fadeIn 0.3s ease;
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
         .user-message {
-            background: linear-gradient(135deg, #4F6DF5 0%, #3F5FE0 100%);
+            background: #4CAF50;
             color: white;
             margin-left: auto;
             text-align: right;
-            border-bottom-right-radius: 5px;
         }
-        
         .assistant-message {
-            background: linear-gradient(135deg, #444466 0%, #333355 100%);
+            background: #2196F3;
             color: white;
             margin-right: auto;
-            border-bottom-left-radius: 5px;
         }
-        
         .controls {
             position: absolute;
             top: 20px;
             right: 20px;
             display: flex;
             gap: 10px;
-            z-index: 10;
         }
-        
         .controls button {
             padding: 10px 20px;
-            background: rgba(79, 109, 245, 0.8);
+            background: #2196F3;
             border: none;
-            border-radius: 25px;
+            border-radius: 5px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s;
         }
-        
         .controls button:hover {
-            background: rgba(79, 109, 245, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+            background: #1976D2;
         }
-        
-        .controls button:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
         .theme-selector {
             position: absolute;
             top: 20px;
             left: 20px;
-            z-index: 10;
         }
-        
         .theme-selector select {
-            padding: 10px 15px;
-            border-radius: 25px;
-            background: rgba(79, 109, 245, 0.8);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s;
-            appearance: none;
-            -webkit-appearance: none;
-            padding-right: 30px;
-        }
-        
-        .theme-selector select:hover {
-            background: rgba(79, 109, 245, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        }
-        
-        .theme-selector::after {
-            content: "▼";
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            pointer-events: none;
-            color: white;
-        }
-        
-        .camera-controls {
-            position: absolute;
-            bottom: 45vh;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10;
-        }
-        
-        .camera-controls button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(79, 109, 245, 0.8);
-            color: white;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .camera-controls button:hover {
-            background: rgba(79, 109, 245, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        }
-        
-        #settingsModal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .modal-content {
-            background: linear-gradient(135deg, #2a2a42 0%, #1f1f33 100%);
-            border-radius: 15px;
-            margin: 10% auto;
-            padding: 30px;
-            width: 80%;
-            max-width: 500px;
-            color: white;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .modal-content h2 {
-            color: #4F6DF5;
-            margin-bottom: 20px;
-            font-size: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
-        }
-        
-        .form-group {
-            margin: 15px 0;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ccc;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            transition: border 0.3s;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #4F6DF5;
-        }
-        
-        .button-group {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 30px;
-            gap: 15px;
-        }
-        
-        .button-group button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .button-group button.save {
-            background: #4F6DF5;
-            color: white;
-        }
-        
-        .button-group button.cancel {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ccc;
-        }
-        
-        .button-group button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .button-group button.save:hover {
-            background: #3F5FE0;
-        }
-        
-        .button-group button.cancel:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .status-indicator {
-            position: absolute;
-            top: 70px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 15px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .status-indicator .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4F6DF5;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        /* Thêm tooltip khi hover vào các nút */
-        [data-tooltip] {
-            position: relative;
-        }
-        
-        [data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 5px 10px;
+            padding: 5px;
             border-radius: 5px;
-            font-size: 12px;
-            white-space: nowrap;
-            margin-bottom: 10px;
-            pointer-events: none;
-            z-index: 1000;
-        }
-        
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                top: 10px;
-                right: 10px;
-            }
-            
-            .controls button {
-                padding: 8px 15px;
-                font-size: 14px;
-            }
-            
-            .theme-selector {
-                top: 10px;
-                left: 10px;
-            }
-            
-            .theme-selector select {
-                padding: 8px 15px;
-                font-size: 14px;
-            }
-            
-            .camera-controls {
-                bottom: 42vh;
-                right: 10px;
-            }
-            
-            .camera-controls button {
-                width: 35px;
-                height: 35px;
-                font-size: 16px;
-            }
-            
-            .modal-content {
-                width: 90%;
-                padding: 20px;
-            }
+            background: #2196F3;
+            color: white;
+            border: none;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    
-    <div class="scene-info" id="sceneInfo">
-        <p>Chuột trái: Xoay model</p>
-        <p>Chuột phải: Di chuyển</p>
-        <p>Cuộn chuột: Zoom in/out</p>
-    </div>
-    
     <div class="controls">
-        <button id="micBtn" data-tooltip="Bắt đầu/Dừng nhận diện giọng nói">
-            <span class="icon">🎤</span> Bật Micro
-        </button>
-        <button id="clearChatBtn" data-tooltip="Xóa tất cả cuộc hội thoại">
-            <span class="icon">🗑️</span> Xóa Chat
-        </button>
-        <button id="settingsBtn" data-tooltip="Cài đặt hệ thống">
-            <span class="icon">⚙️</span> Cài đặt
-        </button>
+        <button id="micBtn">Bật Micro</button>
+        <button id="clearChatBtn">Xóa Chat</button>
+        <button id="settingsBtn">Cài đặt</button>
     </div>
-    
     <div class="theme-selector">
         <select id="themeSelect">
             <option value="space">Không gian</option>
             <option value="forest">Rừng</option>
             <option value="ocean">Đại dương</option>
-            <option value="tech">Công nghệ</option>
-            <option value="sunset">Hoàng hôn</option>
         </select>
     </div>
     
-    <div class="camera-controls">
-        <button id="zoomInBtn" data-tooltip="Phóng to">+</button>
-        <button id="zoomOutBtn" data-tooltip="Thu nhỏ">-</button>
-        <button id="resetCameraBtn" data-tooltip="Khôi phục góc nhìn">↻</button>
-    </div>
-    
-    <div class="status-indicator" id="statusIndicator">
-        <span class="dot"></span>
-        <span id="statusText">Đang nghe...</span>
-    </div>
-    
-    <div id="settingsModal">
-        <div class="modal-content">
-            <h2>Cài đặt hệ thống</h2>
-            <div class="form-group">
+    <!-- Thêm modal cài đặt -->
+    <div id="settingsModal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7);">
+        <div style="background-color:#2a2a42; border-radius:10px; margin:10% auto; padding:20px; width:80%; max-width:500px; color:white;">
+            <h2>Cài đặt</h2>
+            <div style="margin:15px 0;">
                 <label for="apiUrlInput">URL API:</label>
-                <input type="text" id="apiUrlInput" placeholder="Nhập URL API (ví dụ: http://localhost:5000)">
+                <input type="text" id="apiUrlInput" style="width:100%; padding:8px; margin-top:5px; background:#333; color:white; border:1px solid #555;" 
+                    placeholder="Nhập URL API (ví dụ: http://yourserver.com:5000)">
             </div>
-            <div class="form-group">
-                <label for="voiceSelect">Giọng nói:</label>
-                <select id="voiceSelect">
-                    <option value="">Chọn giọng nói</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="voiceSpeedInput">Tốc độ nói:</label>
-                <input type="range" id="voiceSpeedInput" min="0.5" max="2" step="0.1" value="1">
-                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                    <span>Chậm</span>
-                    <span id="speedValue">1.0</span>
-                    <span>Nhanh</span>
-                </div>
-            </div>
-            <div class="button-group">
-                <button id="saveSettingsBtn" class="save">Lưu</button>
-                <button id="closeSettingsBtn" class="cancel">Đóng</button>
+            <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+                <button id="saveSettingsBtn" style="padding:8px 15px; background:#4CAF50; border:none; color:white; margin-right:10px; cursor:pointer;">Lưu</button>
+                <button id="closeSettingsBtn" style="padding:8px 15px; background:#f44336; border:none; color:white; cursor:pointer;">Đóng</button>
             </div>
         </div>
     </div>
     
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header">
-            <div class="chat-title">Trợ lý ảo Mít</div>
-            <div id="expandChatBtn" style="cursor: pointer;">▼</div>
-        </div>
-        <div id="chatMessages"></div>
-    </div>
+    <div class="chat-container" id="chatContainer"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/controls/OrbitControls.js"></script>
     <script>
-        // Biến toàn cục và cấu hình
+        // Biến toàn cục
         let isListening = false;
         let recognition;
         let speechSynthesis = window.speechSynthesis;
-        let currentVoice = null;
-        let speechRate = 1.0;
-        let chatExpanded = false;
-        
-        // Âm thanh thông báo
-        const sounds = {
-            beep: new Howl({ src: ['audio/beep.mp3'], html5: true }),
-            startup: new Howl({ src: ['audio/startup.mp3'], html5: true }),
-            success: new Howl({ src: ['audio/success.mp3'], html5: true }),
-            error: new Howl({ src: ['audio/error.mp3'], html5: true })
-        };
+        const beepSound = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // Âm thanh "tít"
         
         // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
         
         // Khởi tạo Three.js
         const scene = new THREE.Scene();
-        const canvas = document.getElementById('canvas');
-        const renderer = new THREE.WebGLRenderer({ 
-            canvas: canvas, 
-            antialias: true,
-            alpha: true
-        });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Camera
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
-        camera.position.set(0, 1.5, 5);
-        
-        // Orbit Controls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.minDistance = 3;
-        controls.maxDistance = 10;
-        controls.maxPolarAngle = Math.PI / 1.5;
-        
+        camera.position.z = 5;
+
         // Ánh sáng
-        function setupLights() {
-            // Xóa tất cả ánh sáng cũ
-            scene.children.forEach(child => {
-                if (child.isLight) scene.remove(child);
-            });
-            
-            // Ánh sáng môi trường
-            const ambientLight = new THREE.AmbientLight(0x404040, 1);
-            scene.add(ambientLight);
-            
-            // Đèn chính
-            const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-            mainLight.position.set(5, 10, 7);
-            mainLight.castShadow = true;
-            mainLight.shadow.mapSize.width = 1024;
-            mainLight.shadow.mapSize.height = 1024;
-            mainLight.shadow.camera.near = 0.5;
-            mainLight.shadow.camera.far = 25;
-            mainLight.shadow.camera.left = -10;
-            mainLight.shadow.camera.right = 10;
-            mainLight.shadow.camera.top = 10;
-            mainLight.shadow.camera.bottom = -10;
-            scene.add(mainLight);
-            
-            // Đèn phụ trợ
-            const fillLight = new THREE.DirectionalLight(0xaaaaff, 0.5);
-            fillLight.position.set(-5, 5, -5);
-            scene.add(fillLight);
-            
-            // Đèn lát cắt
-            const rimLight = new THREE.DirectionalLight(0xffffaa, 0.3);
-            rimLight.position.set(0, -5, 0);
-            scene.add(rimLight);
-        }
-        
-        setupLights();
-        
-        // Khởi tạo robot
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Robot 3D
         const robotGroup = new THREE.Group();
+        const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        robotGroup.add(body);
+
+        // Mắt
+        const eyeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        leftEye.position.set(-0.4, 0.3, 0.8);
+        robotGroup.add(leftEye);
+        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        rightEye.position.set(0.4, 0.3, 0.8);
+        robotGroup.add(rightEye);
+
+        // Môi
+        const mouthGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.1);
+        const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+        mouth.position.set(0, -0.2, 0.9);
+        robotGroup.add(mouth);
+
+        // Tay
+        const armGeometry = new THREE.BoxGeometry(0.2, 1, 0.2);
+        const armMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+        leftArm.position.set(-1.2, -0.3, 0);
+        robotGroup.add(leftArm);
+        const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+        rightArm.position.set(1.2, -0.3, 0);
+        robotGroup.add(rightArm);
+
+        // Chân
+        const legGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
+        const legMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+        leftLeg.position.set(-0.5, -1.5, 0);
+        robotGroup.add(leftLeg);
+        const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+        rightLeg.position.set(0.5, -1.5, 0);
+        robotGroup.add(rightLeg);
+
         scene.add(robotGroup);
-        
-        // Mặt phẳng đứng
-        const floorGeometry = new THREE.PlaneGeometry(20, 20);
-        const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x333366,
-            metalness: 0.5,
-            roughness: 0.5,
-            transparent: true,
-            opacity: 0.5
-        });
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -1.5;
-        floor.receiveShadow = true;
-        scene.add(floor);
-        
-        // Tạo lưới tọa độ
-        const gridHelper = new THREE.GridHelper(20, 20, 0x0000ff, 0x000066);
-        gridHelper.position.y = -1.5;
-        scene.add(gridHelper);
-        
-        // Tạo robot chi tiết
-        function createRobot() {
-            // Xóa robot cũ nếu có
-            while(robotGroup.children.length > 0) {
-                robotGroup.remove(robotGroup.children[0]);
-            }
-            
-            // Màu sắc chính
-            const primaryColor = 0x4F6DF5;
-            const secondaryColor = 0x2A2A55;
-            const accentColor = 0xAAFFFF;
-            
-            // Tạo các vật liệu
-            const metalMaterial = new THREE.MeshStandardMaterial({
-                color: primaryColor,
-                metalness: 0.8,
-                roughness: 0.2,
-            });
-            
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: secondaryColor,
-                metalness: 0.5,
-                roughness: 0.3,
-            });
-            
-            const glassMaterial = new THREE.MeshPhysicalMaterial({
-                color: accentColor,
-                transmission: 0.9,
-                opacity: 0.8,
-                metalness: 0.1,
-                roughness: 0.05,
-                ior: 1.5,
-                reflectivity: 0.5,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1,
-                transparent: true,
-            });
-            
-            // Đầu robot
-            const headGroup = new THREE.Group();
-            robotGroup.add(headGroup);
-            
-            // Thân đầu chính
-            const headGeometry = new THREE.SphereGeometry(1, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.8);
-            const head = new THREE.Mesh(headGeometry, bodyMaterial);
-            head.castShadow = true;
-            head.receiveShadow = true;
-            headGroup.add(head);
-            
-            // Phần viền đầu
-            const headRimGeometry = new THREE.TorusGeometry(1, 0.05, 16, 32);
-            const headRim = new THREE.Mesh(headRimGeometry, metalMaterial);
-            headRim.rotation.x = Math.PI / 2;
-            headRim.position.y = -0.2;
-            headRim.castShadow = true;
-            headGroup.add(headRim);
-            
-            // Mắt
-            const eyeGroup = new THREE.Group();
-            headGroup.add(eyeGroup);
-            eyeGroup.position.set(0, 0.2, 0.8);
-            
-            // Mắt trái
-            const leftEyeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-            const leftEye = new THREE.Mesh(leftEyeGeometry, glassMaterial);
-            leftEye.position.set(-0.3, 0.1, 0);
-            leftEye.castShadow = true;
-            eyeGroup.add(leftEye);
-            
-            // Mắt phải
-            const rightEyeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-            const rightEye = new THREE.Mesh(rightEyeGeometry, glassMaterial);
-            rightEye.position.set(0.3, 0.1, 0);
-            rightEye.castShadow = true;
-            eyeGroup.add(rightEye);
-            
-            // Viền mắt
-            const leftEyeRimGeometry = new THREE.TorusGeometry(0.2, 0.03, 16, 32);
-            const leftEyeRim = new THREE.Mesh(leftEyeRimGeometry, metalMaterial);
-            leftEyeRim.position.set(-0.3, 0.1, 0);
-            leftEyeRim.rotation.y = Math.PI / 2;
-            eyeGroup.add(leftEyeRim);
-            
-            const rightEyeRimGeometry = new THREE.TorusGeometry(0.2, 0.03, 16, 32);
-            const rightEyeRim = new THREE.Mesh(rightEyeRimGeometry, metalMaterial);
-            rightEyeRim.position.set(0.3, 0.1, 0);
-            rightEyeRim.rotation.y = Math.PI / 2;
-            eyeGroup.add(rightEyeRim);
-            
-            // Miệng
-            const mouthGroup = new THREE.Group();
-            headGroup.add(mouthGroup);
-            mouthGroup.position.set(0, -0.35, 0.8);
-            
-            // Phần miệng có thể mở
-            const mouthGeometry = new THREE.BoxGeometry(0.5, 0.15, 0.1);
-            const mouth = new THREE.Mesh(mouthGeometry, metalMaterial);
-            mouth.castShadow = true;
-            mouthGroup.add(mouth);
-            
-            // Thân robot
-            const bodyGroup = new THREE.Group();
-            bodyGroup.position.y = -1.3;
-            robotGroup.add(bodyGroup);
-            
-            // Phần thân chính
-            const torsoGeometry = new THREE.CylinderGeometry(0.7, 0.5, 1, 32);
-            const torso = new THREE.Mesh(torsoGeometry, bodyMaterial);
-            torso.castShadow = true;
-            torso.receiveShadow = true;
-            bodyGroup.add(torso);
-            
-            // Cổ kết nối đầu và thân
-            const neckGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.3, 32);
-            const neck = new THREE.Mesh(neckGeometry, metalMaterial);
-            neck.position.y = 0.65;
-            neck.castShadow = true;
-            bodyGroup.add(neck);
-            
-            // Viền thân
-            const torsoRimTopGeometry = new THREE.TorusGeometry(0.7, 0.05, 16, 32);
-            const torsoRimTop = new THREE.Mesh(torsoRimTopGeometry, metalMaterial);
-            torsoRimTop.rotation.x = Math.PI / 2;
-            torsoRimTop.position.y = 0.5;
-            bodyGroup.add(torsoRimTop);
-            
-            const torsoRimBottomGeometry = new THREE.TorusGeometry(0.5, 0.05, 16, 32);
-            const torsoRimBottom = new THREE.Mesh(torsoRimBottomGeometry, metalMaterial);
-            torsoRimBottom.rotation.x = Math.PI / 2;
-            torsoRimBottom.position.y = -0.5;
-            bodyGroup.add(torsoRimBottom);
-            
-            // Chi tiết ở ngực
-            const chestDetailGeometry = new THREE.CircleGeometry(0.2, 32);
-            const chestDetail = new THREE.Mesh(chestDetailGeometry, glassMaterial);
-            chestDetail.position.set(0, 0.2, 0.5);
-            chestDetail.castShadow = true;
-            bodyGroup.add(chestDetail);
-            
-            // Tay trái
-            const leftArmGroup = new THREE.Group();
-            bodyGroup.add(leftArmGroup);
-            leftArmGroup.position.set(-0.9, 0.3, 0);
-            
-            // Khớp vai
-            const shoulderJointGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-            const shoulderJoint = new THREE.Mesh(shoulderJointGeometry, metalMaterial);
-            shoulderJoint.castShadow = true;
-            leftArmGroup.add(shoulderJoint);
-            
-            // Cánh tay trên
-            const upperArmGeometry = new THREE.CylinderGeometry(0.1, 0.12, 0.6, 32);
-            const upperArm = new THREE.Mesh(upperArmGeometry, bodyMaterial);
-            upperArm.position.y = -0.4;
-            upperArm.castShadow = true;
-            leftArmGroup.add(upperArm);
-            
-            // Khớp khuỷu
-            const elbowJointGeometry = new THREE.SphereGeometry(0.13, 32, 32);
-            const elbowJoint = new THREE.Mesh(elbowJointGeometry, metalMaterial);
-            elbowJoint.position.y = -0.7;
-            elbowJoint.castShadow = true;
-            leftArmGroup.add(elbowJoint);
-            
-            // Cẳng tay
-            const forearmGeometry = new THREE.CylinderGeometry(0.1, 0.08, 0.6, 32);
-            const forearm = new THREE.Mesh(forearmGeometry, bodyMaterial);
-            forearm.position.y = -1.1;
-            forearm.castShadow = true;
-            leftArmGroup.add(forearm);
-            
-            // Bàn tay
-            const handGeometry = new THREE.SphereGeometry(0.15, 32, 32);
-            const hand = new THREE.Mesh(handGeometry, metalMaterial);
-            hand.position.y = -1.5;
-            hand.scale.set(1, 0.6, 0.8);
-            hand.castShadow = true;
-            leftArmGroup.add(hand);
-            
-            // Tay phải (sao chép từ tay trái)
-            const rightArmGroup = leftArmGroup.clone();
-            rightArmGroup.position.x = 0.9;
-            bodyGroup.add(rightArmGroup);
-            
-            // Phần chân và đế
-            const legsGroup = new THREE.Group();
-            bodyGroup.add(legsGroup);
-            legsGroup.position.y = -0.7;
-            
-            // Đế chân
-            const baseGeometry = new THREE.CylinderGeometry(0.6, 0.7, 0.2, 32);
-            const base = new THREE.Mesh(baseGeometry, metalMaterial);
-            base.position.y = -0.4;
-            base.castShadow = true;
-            base.receiveShadow = true;
-            legsGroup.add(base);
-            
-            // Chân trái
-            const leftLegGroup = new THREE.Group();
-            legsGroup.add(leftLegGroup);
-            leftLegGroup.position.set(-0.4, -0.3, 0);
-            
-            // Đùi
-            const thighGeometry = new THREE.CylinderGeometry(0.12, 0.10, 0.4, 32);
-            const thigh = new THREE.Mesh(thighGeometry, bodyMaterial);
-            thigh.position.y = -0.2;
-            thigh.castShadow = true;
-            leftLegGroup.add(thigh);
-            
-            // Khớp gối
-            const kneeGeometry = new THREE.SphereGeometry(0.12, 32, 32);
-            const knee = new THREE.Mesh(kneeGeometry, metalMaterial);
-            knee.position.y = -0.4;
-            knee.castShadow = true;
-            leftLegGroup.add(knee);
-            
-            // Cẳng chân
-            const calfGeometry = new THREE.CylinderGeometry(0.09, 0.07, 0.35, 32);
-            const calf = new THREE.Mesh(calfGeometry, bodyMaterial);
-            calf.position.y = -0.6;
-            calf.castShadow = true;
-            leftLegGroup.add(calf);
-            
-            // Bàn chân
-            const footGeometry = new THREE.BoxGeometry(0.18, 0.10, 0.3);
-            const foot = new THREE.Mesh(footGeometry, metalMaterial);
-            foot.position.y = -0.8;
-            foot.position.z = 0.05;
-            foot.castShadow = true;
-            leftLegGroup.add(foot);
-            
-            // Chân phải (sao chép từ chân trái)
-            const rightLegGroup = leftLegGroup.clone();
-            rightLegGroup.position.x = 0.4;
-            legsGroup.add(rightLegGroup);
-            
-            // Lưu tham chiếu đến các bộ phận quan trọng để điều khiển hoạt ảnh
-            robotGroup.userData = {
-                head: headGroup,
-                leftEye: leftEye,
-                rightEye: rightEye,
-                mouth: mouth,
-                leftArm: leftArmGroup,
-                rightArm: rightArmGroup,
-                leftLeg: leftLegGroup,
-                rightLeg: rightLegGroup,
-                body: bodyGroup
-            };
-            
-            // Chuẩn bị vị trí ban đầu
-            robotGroup.position.y = 0;
-            
-            return robotGroup;
+
+        // Hiệu ứng nền (ngôi sao)
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+        const starsVertices = [];
+        for (let i = 0; i < 1000; i++) {
+            const x = (Math.random() - 0.5) * 200;
+            const y = (Math.random() - 0.5) * 200;
+            const z = (Math.random() - 0.5) * 200;
+            starsVertices.push(x, y, z);
         }
-        
-        const robot = createRobot();
-        
-        // Hiệu ứng môi trường
-        function createEnvironment(theme = 'space') {
-            // Xóa các đối tượng cũ
-            scene.children.forEach(child => {
-                if (child.name === 'environment') {
-                    scene.remove(child);
-                }
-            });
-            
-            // Tạo bầu trời
-            let skyColor, floorColor, gridColor;
-            
-            switch(theme) {
-                case 'forest':
-                    skyColor = 0x2e462e;
-                    floorColor = 0x1a2e1a;
-                    gridColor = 0x55aa55;
-                    document.body.style.background = 'radial-gradient(circle, #2e462e 0%, #1a2e1a 100%)';
-                    break;
-                case 'ocean':
-                    skyColor = 0x1a3c4e;
-                    floorColor = 0x0f2a3a;
-                    gridColor = 0x55aaff;
-                    document.body.style.background = 'radial-gradient(circle, #1a3c4e 0%, #0f2a3a 100%)';
-                    break;
-                case 'tech':
-                    skyColor = 0x25234f;
-                    floorColor = 0x16142e;
-                    gridColor = 0x7a4dff;
-                    document.body.style.background = 'radial-gradient(circle, #25234f 0%, #16142e 100%)';
-                    break;
-                case 'sunset':
-                    skyColor = 0x5e2e4f;
-                    floorColor = 0x3e1e2f;
-                    gridColor = 0xff7755;
-                    document.body.style.background = 'radial-gradient(circle, #5e2e4f 0%, #3e1e2f 100%)';
-                    break;
-                case 'space':
-                default:
-                    skyColor = 0x1a1a2e;
-                    floorColor = 0x0f0f1a;
-                    gridColor = 0x4F6DF5;
-                    document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
-                    break;
-            }
-            
-            // Cập nhật màu sắc sàn và lưới
-            floor.material.color.set(floorColor);
-            gridHelper.material.color.set(gridColor);
-            
-            // Tạo các ngôi sao cho theme không gian
-            if (theme === 'space') {
-                const starsGeometry = new THREE.BufferGeometry();
-                const starsMaterial = new THREE.PointsMaterial({ 
-                    color: 0xffffff, 
-                    size: 0.1,
-                    transparent: true,
-                    opacity: 0.8,
-                    sizeAttenuation: true
-                });
-                
-                const starsVertices = [];
-                for (let i = 0; i < 1000; i++) {
-                    const x = (Math.random() - 0.5) * 200;
-                    const y = (Math.random() - 0.5) * 200;
-                    const z = (Math.random() - 0.5) * 200;
-                    starsVertices.push(x, y, z);
-                }
-                
-                starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
-                const stars = new THREE.Points(starsGeometry, starsMaterial);
-                stars.name = 'environment';
-                scene.add(stars);
-            }
-            
-            // Tạo các cây cho theme rừng
-            if (theme === 'forest') {
-                const treeGroup = new THREE.Group();
-                treeGroup.name = 'environment';
-                
-                const treeCount = 30;
-                for (let i = 0; i < treeCount; i++) {
-                    const treeX = (Math.random() - 0.5) * 40;
-                    const treeZ = (Math.random() - 0.5) * 40;
-                    
-                    // Tránh đặt cây gần robot
-                    if (Math.sqrt(treeX * treeX + treeZ * treeZ) < 8) continue;
-                    
-                    const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
-                    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-                    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                    trunk.position.set(treeX, 0, treeZ);
-                    trunk.castShadow = true;
-                    
-                    const leavesGeometry = new THREE.ConeGeometry(1, 2, 8);
-                    const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-                    const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                    leaves.position.set(treeX, 2, treeZ);
-                    leaves.castShadow = true;
-                    
-                    treeGroup.add(trunk);
-                    treeGroup.add(leaves);
-                }
-                
-                scene.add(treeGroup);
-            }
-            
-            // Tạo các bong bóng/cá cho theme đại dương
-            if (theme === 'ocean') {
-                const oceanGroup = new THREE.Group();
-                oceanGroup.name = 'environment';
-                
-                const bubbleCount = 50;
-                for (let i = 0; i < bubbleCount; i++) {
-                    const x = (Math.random() - 0.5) * 30;
-                    const y = Math.random() * 15;
-                    const z = (Math.random() - 0.5) * 30;
-                    
-                    const bubbleGeometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.2, 16, 16);
-                    const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-                        color: 0xaaddff,
-                        transparent: true,
-                        opacity: 0.6,
-                        transmission: 0.9,
-                        metalness: 0.1,
-                        roughness: 0.1,
-                        clearcoat: 1.0
-                    });
-                    
-                    const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
-                    bubble.position.set(x, y, z);
-                    bubble.userData = { 
-                        speed: 0.01 + Math.random() * 0.03,
-                        originalY: y
-                    };
-                    
-                    oceanGroup.add(bubble);
-                }
-                
-                // Tạo một số cá
-                const fishCount = 10;
-                for (let i = 0; i < fishCount; i++) {
-                    const fishGroup = new THREE.Group();
-                    
-                    const x = (Math.random() - 0.5) * 30;
-                    const y = Math.random() * 10 - 5;
-                    const z = (Math.random() - 0.5) * 30;
-                    
-                    const bodyGeometry = new THREE.ConeGeometry(0.3, 1, 8);
-                    const bodyMaterial = new THREE.MeshStandardMaterial({ 
-                        color: new THREE.Color(Math.random(), Math.random(), Math.random()) 
-                    });
-                    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                    body.rotation.z = Math.PI / 2;
-                    fishGroup.add(body);
-                    
-                    const tailGeometry = new THREE.ConeGeometry(0.2, 0.5, 8);
-                    const tail = new THREE.Mesh(tailGeometry, bodyMaterial);
-                    tail.position.x = -0.7;
-                    tail.rotation.z = Math.PI / 2;
-                    fishGroup.add(tail);
-                    
-                    fishGroup.position.set(x, y, z);
-                    fishGroup.rotation.y = Math.random() * Math.PI * 2;
-                    fishGroup.userData = {
-                        speed: 0.05 + Math.random() * 0.05,
-                        rotationSpeed: 0.01 + Math.random() * 0.02,
-                        direction: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize()
-                    };
-                    
-                    oceanGroup.add(fishGroup);
-                }
-                
-                scene.add(oceanGroup);
-            }
-            
-            // Tạo các phần tử công nghệ cho theme tech
-            if (theme === 'tech') {
-                const techGroup = new THREE.Group();
-                techGroup.name = 'environment';
-                
-                // Tạo các dòng lưới
-                const gridCount = 10;
-                const gridSize = 50;
-                const gridStep = gridSize / gridCount;
-                
-                for (let i = 0; i <= gridCount; i++) {
-                    const pos = -gridSize / 2 + i * gridStep;
-                    
-                    // Dòng X
-                    const lineGeometryX = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(-gridSize / 2, 10, pos),
-                        new THREE.Vector3(gridSize / 2, 10, pos)
-                    ]);
-                    
-                    const lineMaterialX = new THREE.LineBasicMaterial({ 
-                        color: 0x7a4dff, 
-                        transparent: true,
-                        opacity: 0.5
-                    });
-                    
-                    const lineX = new THREE.Line(lineGeometryX, lineMaterialX);
-                    techGroup.add(lineX);
-                    
-                    // Dòng Z
-                    const lineGeometryZ = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(pos, 10, -gridSize / 2),
-                        new THREE.Vector3(pos, 10, gridSize / 2)
-                    ]);
-                    
-                    const lineZ = new THREE.Line(lineGeometryZ, lineMaterialX);
-                    techGroup.add(lineZ);
-                }
-                
-                // Tạo các khối dữ liệu nổi
-                const cubeCount = 30;
-                for (let i = 0; i < cubeCount; i++) {
-                    const size = 0.5 + Math.random() * 1.5;
-                    const x = (Math.random() - 0.5) * 40;
-                    const y = Math.random() * 15;
-                    const z = (Math.random() - 0.5) * 40;
-                    
-                    // Tránh đặt quá gần robot
-                    if (Math.sqrt(x * x + z * z) < 8) continue;
-                    
-                    const cubeGeometry = new THREE.BoxGeometry(size, size, size);
-                    const cubeMaterial = new THREE.MeshStandardMaterial({
-                        color: 0x7a4dff,
-                        transparent: true,
-                        opacity: 0.7,
-                        wireframe: Math.random() > 0.5
-                    });
-                    
-                    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-                    cube.position.set(x, y, z);
-                    cube.rotation.set(
-                        Math.random() * Math.PI,
-                        Math.random() * Math.PI,
-                        Math.random() * Math.PI
-                    );
-                    
-                    cube.userData = {
-                        rotationSpeed: {
-                            x: (Math.random() - 0.5) * 0.01,
-                            y: (Math.random() - 0.5) * 0.01,
-                            z: (Math.random() - 0.5) * 0.01
-                        },
-                        floatSpeed: 0.005 + Math.random() * 0.01,
-                        floatHeight: Math.random() * 0.5,
-                        originalY: y
-                    };
-                    
-                    techGroup.add(cube);
-                }
-                
-                scene.add(techGroup);
-            }
-            
-            // Tạo hiệu ứng hoàng hôn
-            if (theme === 'sunset') {
-                const sunsetGroup = new THREE.Group();
-                sunsetGroup.name = 'environment';
-                
-                // Tạo mặt trời
-                const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-                const sunMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xff5533,
-                    transparent: true,
-                    opacity: 0.8
-                });
-                
-                const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-                sun.position.set(0, -3, -40);
-                sunsetGroup.add(sun);
-                
-                // Tạo các đám mây
-                const cloudCount = 15;
-                for (let i = 0; i < cloudCount; i++) {
-                    const cloudGroup = new THREE.Group();
-                    
-                    const x = (Math.random() - 0.5) * 40;
-                    const y = 5 + Math.random() * 10;
-                    const z = (Math.random() - 0.5) * 40;
-                    
-                    const cloudPartsCount = 3 + Math.floor(Math.random() * 5);
-                    for (let j = 0; j < cloudPartsCount; j++) {
-                        const size = 0.5 + Math.random() * 1.5;
-                        const cloudPartGeometry = new THREE.SphereGeometry(size, 16, 16);
-                        const cloudPartMaterial = new THREE.MeshStandardMaterial({
-                            color: 0xffccaa,
-                            transparent: true,
-                            opacity: 0.8
-                        });
-                        
-                        const cloudPart = new THREE.Mesh(cloudPartGeometry, cloudPartMaterial);
-                        cloudPart.position.set(
-                            (Math.random() - 0.5) * 2,
-                            (Math.random() - 0.5) * 0.5,
-                            (Math.random() - 0.5) * 2
-                        );
-                        
-                        cloudGroup.add(cloudPart);
-                    }
-                    
-                    cloudGroup.position.set(x, y, z);
-                    cloudGroup.userData = {
-                        speed: 0.01 + Math.random() * 0.02,
-                        direction: Math.random() > 0.5 ? 1 : -1
-                    };
-                    
-                    sunsetGroup.add(cloudGroup);
-                }
-                
-                scene.add(sunsetGroup);
-            }
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // Animation
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.05;
+            stars.rotation.y += 0.001;
+            renderer.render(scene, camera);
         }
-        
-        // Tạo môi trường ban đầu
-        createEnvironment('space');
-        
-        // Các biến hoạt ảnh
-        let animationMixer = null;
-        let speakingAction = null;
-        let isAnimating = false;
-        
-        // Hoạt ảnh robot
+        animate();
+
+        // Hành động của robot
         function speakAnimation() {
-            const mouth = robotGroup.userData.mouth;
-            const startTime = Date.now();
-            const duration = 2000; // ms
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const t = elapsed / duration;
-                
-                if (t < 1) {
-                    mouth.scale.y = 1 + Math.sin(t * 20) * 0.5;
-                    requestAnimationFrame(animate);
+            const speak = (t) => {
+                mouth.scale.y = 1 + Math.sin(t * 10) * 0.3;
+                if (speechSynthesis.speaking) {
+                    requestAnimationFrame(() => speak(t + 0.1));
                 } else {
                     mouth.scale.y = 1;
                 }
             };
-            
-            animate();
+            speak(time);
         }
-        
+
         function laughAnimation() {
-            const head = robotGroup.userData.head;
-            const body = robotGroup.userData.body;
-            const leftEye = robotGroup.userData.leftEye;
-            const rightEye = robotGroup.userData.rightEye;
-            
-            const startTime = Date.now();
-            const duration = 3000; // ms
-            
-            const originalLeftEyeScale = leftEye.scale.clone();
-            const originalRightEyeScale = rightEye.scale.clone();
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const t = elapsed / duration;
-                
-                if (t < 1) {
-                    body.rotation.y = Math.sin(t * 10) * 0.1;
-                    head.rotation.z = Math.sin(t * 10) * 0.2;
-                    
-                    // Mắt nheo lại khi cười
-                    leftEye.scale.y = originalLeftEyeScale.y * (0.5 + Math.abs(Math.sin(t * 10)) * 0.5);
-                    rightEye.scale.y = originalRightEyeScale.y * (0.5 + Math.abs(Math.sin(t * 10)) * 0.5);
-                    
-                    requestAnimationFrame(animate);
+            const laugh = (t) => {
+                robotGroup.position.y = Math.sin(t * 5) * 0.2;
+                leftEye.scale.set(1, 0.5, 1);
+                rightEye.scale.set(1, 0.5, 1);
+                if (t < 2) {
+                    requestAnimationFrame(() => laugh(t + 0.1));
                 } else {
-                    body.rotation.y = 0;
-                    head.rotation.z = 0;
-                    leftEye.scale.copy(originalLeftEyeScale);
-                    rightEye.scale.copy(originalRightEyeScale);
+                    robotGroup.position.y = 0;
+                    leftEye.scale.set(1, 1, 1);
+                    rightEye.scale.set(1, 1, 1);
                 }
             };
-            
-            animate();
+            laugh(time);
         }
-        
+
         function waveAnimation() {
-            const rightArm = robotGroup.userData.rightArm;
-            const startTime = Date.now();
-            const duration = 2500; // ms
-            
-            const originalRotation = rightArm.rotation.clone();
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const t = elapsed / duration;
-                
-                if (t < 1) {
-                    rightArm.rotation.z = originalRotation.z + Math.sin(t * Math.PI * 2) * 0.5;
-                    rightArm.rotation.y = originalRotation.y + Math.cos(t * Math.PI * 2) * 0.3;
-                    
-                    requestAnimationFrame(animate);
+            const wave = (t) => {
+                rightArm.rotation.z = Math.sin(t * 5) * 0.5;
+                if (t < 2) {
+                    requestAnimationFrame(() => wave(t + 0.1));
                 } else {
-                    rightArm.rotation.copy(originalRotation);
+                    rightArm.rotation.z = 0;
                 }
             };
-            
-            animate();
+            wave(time);
         }
-        
+
         function danceAnimation() {
-            const body = robotGroup.userData.body;
-            const leftArm = robotGroup.userData.leftArm;
-            const rightArm = robotGroup.userData.rightArm;
-            const leftLeg = robotGroup.userData.leftLeg;
-            const rightLeg = robotGroup.userData.rightLeg;
-            const head = robotGroup.userData.head;
-            
-            const startTime = Date.now();
-            const duration = 4000; // ms
-            
-            const originalBodyPos = body.position.clone();
-            const originalBodyRot = body.rotation.clone();
-            const originalLeftArmRot = leftArm.rotation.clone();
-            const originalRightArmRot = rightArm.rotation.clone();
-            const originalLeftLegRot = leftLeg.rotation.clone();
-            const originalRightLegRot = rightLeg.rotation.clone();
-            const originalHeadRot = head.rotation.clone();
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const t = elapsed / duration;
-                
-                if (t < 1) {
-                    body.position.y = originalBodyPos.y + Math.sin(t * Math.PI * 8) * 0.2;
-                    body.rotation.y = originalBodyRot.y + Math.sin(t * Math.PI * 4) * 0.5;
-                    
-                    leftArm.rotation.z = originalLeftArmRot.z + Math.sin(t * Math.PI * 4) * 0.7;
-                    rightArm.rotation.z = originalRightArmRot.z + Math.sin(t * Math.PI * 4 + Math.PI) * 0.7;
-                    
-                    leftLeg.rotation.z = originalLeftLegRot.z + Math.sin(t * Math.PI * 4) * 0.3;
-                    rightLeg.rotation.z = originalRightLegRot.z + Math.sin(t * Math.PI * 4 + Math.PI) * 0.3;
-                    
-                    head.rotation.z = originalHeadRot.z + Math.sin(t * Math.PI * 4) * 0.2;
-                    
-                    requestAnimationFrame(animate);
+            const dance = (t) => {
+                robotGroup.rotation.y = Math.sin(t * 3) * 0.3;
+                leftArm.rotation.z = Math.sin(t * 5) * 0.5;
+                rightArm.rotation.z = Math.sin(t * 5 + Math.PI) * 0.5;
+                leftLeg.rotation.z = Math.sin(t * 5) * 0.3;
+                rightLeg.rotation.z = Math.sin(t * 5 + Math.PI) * 0.3;
+                if (t < 3) {
+                    requestAnimationFrame(() => dance(t + 0.1));
                 } else {
-                    body.position.copy(originalBodyPos);
-                    body.rotation.copy(originalBodyRot);
-                    leftArm.rotation.copy(originalLeftArmRot);
-                    rightArm.rotation.copy(originalRightArmRot);
-                    leftLeg.rotation.copy(originalLeftLegRot);
-                    rightLeg.rotation.copy(originalRightLegRot);
-                    head.rotation.copy(originalHeadRot);
+                    robotGroup.rotation.y = 0;
+                    leftArm.rotation.z = 0;
+                    rightArm.rotation.z = 0;
+                    leftLeg.rotation.z = 0;
+                    rightLeg.rotation.z = 0;
                 }
             };
-            
-            animate();
+            dance(time);
         }
-        
+
         function surpriseAnimation() {
-            const head = robotGroup.userData.head;
-            const leftEye = robotGroup.userData.leftEye;
-            const rightEye = robotGroup.userData.rightEye;
-            
-            const startTime = Date.now();
-            const duration = 2000; // ms
-            
-            const originalLeftEyeScale = leftEye.scale.clone();
-            const originalRightEyeScale = rightEye.scale.clone();
-            const originalHeadPos = head.position.clone();
-            
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const t = elapsed / duration;
-                
-                if (t < 1) {
-                    // Mắt mở to khi ngạc nhiên
-                    leftEye.scale.set(
-                        originalLeftEyeScale.x * (1 + Math.sin(Math.PI * t) * 0.5),
-                        originalLeftEyeScale.y * (1 + Math.sin(Math.PI * t) * 0.5),
-                        originalLeftEyeScale.z * (1 + Math.sin(Math.PI * t) * 0.5)
-                    );
-                    
-                    rightEye.scale.set(
-                        originalRightEyeScale.x * (1 + Math.sin(Math.PI * t) * 0.5),
-                        originalRightEyeScale.y * (1 + Math.sin(Math.PI * t) * 0.5),
-                        originalRightEyeScale.z * (1 + Math.sin(Math.PI * t) * 0.5)
-                    );
-                    
-                    // Đầu lùi lại nhẹ
-                    head.position.z = originalHeadPos.z - Math.sin(Math.PI * t) * 0.2;
-                    
-                    requestAnimationFrame(animate);
+            const surprise = (t) => {
+                leftEye.scale.set(1.5, 1.5, 1.5);
+                rightEye.scale.set(1.5, 1.5, 1.5);
+                robotGroup.position.z = -0.5 + Math.sin(t * 5) * 0.2;
+                if (t < 2) {
+                    requestAnimationFrame(() => surprise(t + 0.1));
                 } else {
-                    leftEye.scale.copy(originalLeftEyeScale);
-                    rightEye.scale.copy(originalRightEyeScale);
-                    head.position.copy(originalHeadPos);
+                    leftEye.scale.set(1, 1, 1);
+                    rightEye.scale.set(1, 1, 1);
+                    robotGroup.position.z = 0;
                 }
             };
-            
-            animate();
+            surprise(time);
         }
-        
-        // Hiệu ứng khi robot khởi động
-        function startupAnimation() {
-            const body = robotGroup.userData.body;
-            const head = robotGroup.userData.head;
-            const leftEye = robotGroup.userData.leftEye;
-            const rightEye = robotGroup.userData.rightEye;
-            const leftArm = robotGroup.userData.leftArm;
-            const rightArm = robotGroup.userData.rightArm;
-            
-            // Mắt ban đầu tắt
-            leftEye.material.opacity = 0;
-            rightEye.material.opacity = 0;
-            
-            // Đặt position ban đầu
-            robotGroup.position.y = -5;
-            
-            // Hiệu ứng khởi động
-            gsap.timeline()
-                .to(robotGroup.position, {
-                    y: 0,
-                    duration: 2,
-                    ease: "elastic.out(1, 0.5)"
-                })
-                .to([leftEye.material, rightEye.material], {
-                    opacity: 1,
-                    duration: 0.5,
-                    onStart: () => sounds.startup.play()
-                }, "-=1")
-                .to(head.rotation, {
-                    y: Math.PI * 2,
-                    duration: 1,
-                    ease: "power1.inOut"
-                }, "-=0.5")
-                .to(leftArm.rotation, {
-                    z: Math.PI * 0.25,
-                    duration: 0.5,
-                    yoyo: true,
-                    repeat: 1,
-                    ease: "power1.inOut"
-                }, "-=0.5")
-                .to(rightArm.rotation, {
-                    z: -Math.PI * 0.25,
-                    duration: 0.5,
-                    yoyo: true,
-                    repeat: 1,
-                    ease: "power1.inOut",
-                    onComplete: function() {
-                        addMessage('Trợ lý ảo Mít đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
-                    }
-                });
-        }
-        
-        // Ambient animation - robot breathes and makes small movements
-        function idleAnimation() {
-            if (!isAnimating) {
-                const head = robotGroup.userData.head;
-                const body = robotGroup.userData.body;
-                
-                gsap.timeline({
-                    repeat: -1,
-                    yoyo: true
-                })
-                .to(body.position, {
-                    y: -1.25,
-                    duration: 2,
-                    ease: "sine.inOut"
-                })
-                .to(head.position, {
-                    y: 0.05,
-                    duration: 2,
-                    ease: "sine.inOut"
-                }, "-=2");
-            }
-        }
-        
-        // Animate environment elements
-        function animateEnvironment() {
-            scene.children.forEach(child => {
-                if (child.name === 'environment') {
-                    // Animate stars in space theme
-                    if (child.isPoints) {
-                        child.rotation.y += 0.0003;
-                    }
-                    
-                    // Animate ocean elements
-                    child.children.forEach(element => {
-                        // Animate bubbles
-                        if (element.geometry && element.geometry.type === "SphereGeometry" && element.userData.speed) {
-                            element.position.y += element.userData.speed;
-                            
-                            // Reset bubble position if it goes too high
-                            if (element.position.y > 20) {
-                                element.position.y = element.userData.originalY - 20;
-                            }
-                        }
-                        
-                        // Animate fish
-                        if (element.isGroup && element.userData.speed) {
-                            element.position.x += element.userData.direction.x * element.userData.speed;
-                            element.position.y += element.userData.direction.y * element.userData.speed * 0.1;
-                            element.position.z += element.userData.direction.z * element.userData.speed;
-                            
-                            element.rotation.y += element.userData.rotationSpeed;
-                            
-                            // Wrap around if fish goes out of bounds
-                            if (Math.abs(element.position.x) > 20 || 
-                                Math.abs(element.position.y) > 10 || 
-                                Math.abs(element.position.z) > 20) {
-                                
-                                // Generate new direction
-                                element.userData.direction = new THREE.Vector3(
-                                    Math.random() - 0.5, 
-                                    (Math.random() - 0.5) * 0.2, 
-                                    Math.random() - 0.5
-                                ).normalize();
-                                
-                                // Reset position to opposite edge
-                                if (Math.abs(element.position.x) > 20) {
-                                    element.position.x = -Math.sign(element.position.x) * 20;
-                                }
-                                if (Math.abs(element.position.y) > 10) {
-                                    element.position.y = -Math.sign(element.position.y) * 10;
-                                }
-                                if (Math.abs(element.position.z) > 20) {
-                                    element.position.z = -Math.sign(element.position.z) * 20;
-                                }
-                                
-                                // Adjust rotation to match new direction
-                                element.rotation.y = Math.atan2(
-                                    element.userData.direction.x,
-                                    element.userData.direction.z
-                                );
-                            }
-                        }
-                        
-                        // Animate tech cubes
-                        if (element.geometry && element.geometry.type === "BoxGeometry" && element.userData.rotationSpeed) {
-                            element.rotation.x += element.userData.rotationSpeed.x;
-                            element.rotation.y += element.userData.rotationSpeed.y;
-                            element.rotation.z += element.userData.rotationSpeed.z;
-                            
-                            // Float up and down
-                            element.position.y = element.userData.originalY + 
-                                Math.sin(Date.now() * element.userData.floatSpeed) * element.userData.floatHeight;
-                        }
-                        
-                        // Animate sunset clouds
-                        if (element.isGroup && element.userData.speed && element.userData.direction) {
-                            element.position.x += element.userData.speed * element.userData.direction;
-                            
-                            // Reset cloud position if it goes too far
-                            if (Math.abs(element.position.x) > 40) {
-                                element.position.x = -element.userData.direction * 40;
-                            }
-                        }
-                    });
-                }
-            });
-        }
-        
-        // Main animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Update controls
-            controls.update();
-            
-            // Animate environment
-            animateEnvironment();
-            
-            // Render the scene
-            renderer.render(scene, camera);
-        }
-        
-        // Start animations
-        animate();
-        startupAnimation();
-        idleAnimation();
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / (window.innerHeight * 0.6);
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
-        });
-        
-        // Show mouse controls info when moving mouse over canvas
-        canvas.addEventListener('mouseover', () => {
-            document.getElementById('sceneInfo').style.opacity = '1';
-        });
-        
-        canvas.addEventListener('mouseout', () => {
-            document.getElementById('sceneInfo').style.opacity = '0';
-        });
-        
-        // Camera control buttons
-        document.getElementById('zoomInBtn').addEventListener('click', () => {
-            gsap.to(camera.position, {
-                z: camera.position.z * 0.8,
-                duration: 0.5
-            });
-        });
-        
-        document.getElementById('zoomOutBtn').addEventListener('click', () => {
-            gsap.to(camera.position, {
-                z: camera.position.z * 1.2,
-                duration: 0.5
-            });
-        });
-        
-        document.getElementById('resetCameraBtn').addEventListener('click', () => {
-            gsap.to(camera.position, {
-                x: 0,
-                y: 1.5,
-                z: 5,
-                duration: 1
-            });
-            gsap.to(controls.target, {
-                x: 0,
-                y: 0,
-                z: 0,
-                duration: 1
-            });
-        });
-        
-        // Expand/collapse chat panel
-        document.getElementById('expandChatBtn').addEventListener('click', () => {
-            const chatContainer = document.getElementById('chatContainer');
-            const expandBtn = document.getElementById('expandChatBtn');
-            
-            if (chatExpanded) {
-                chatContainer.style.height = '40vh';
-                expandBtn.textContent = '▼';
-            } else {
-                chatContainer.style.height = '80vh';
-                expandBtn.textContent = '▲';
-            }
-            
-            chatExpanded = !chatExpanded;
-        });
-        
-        // Theme selection
-        document.getElementById('themeSelect').addEventListener('change', (event) => {
-            createEnvironment(event.target.value);
-        });
 
         // Khung chat
-        const chatMessages = document.getElementById('chatMessages');
+        const chatContainer = document.getElementById('chatContainer');
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('chat-message', isUser ? 'user-message' : 'assistant-message');
             messageDiv.textContent = content;
-            chatMessages.appendChild(messageDiv);
+            chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-        
-        // Status indicator
-        function showStatus(text, show = true) {
-            const statusIndicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('statusText');
-            statusText.textContent = text;
-            statusIndicator.style.opacity = show ? '1' : '0';
         }
 
         // Nhận diện giọng nói
         const micBtn = document.getElementById('micBtn');
         micBtn.addEventListener('click', toggleListening);
-        
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'vi-VN';
             recognition.interimResults = false;
-            recognition.continuous = false;
             recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                showStatus('Đang nghe...');
-                isListening = true;
-                micBtn.innerHTML = '<span class="icon">⏹️</span> Dừng Micro';
-                
-                // Animate ears to indicate listening
-                const leftEye = robotGroup.userData.leftEye;
-                const rightEye = robotGroup.userData.rightEye;
-                gsap.to([leftEye.material, rightEye.material], {
-                    emissiveIntensity: 0.5,
-                    color: 0x00ffff,
-                    duration: 0.5,
-                    repeat: -1,
-                    yoyo: true
-                });
-            };
 
             recognition.onresult = (event) => {
                 const query = event.results[0][0].transcript;
-                showStatus('', false);
                 addMessage(query, true);
                 processCommand(query);
-                
-                // Reset eye color
-                const leftEye = robotGroup.userData.leftEye;
-                const rightEye = robotGroup.userData.rightEye;
-                gsap.to([leftEye.material, rightEye.material], {
-                    color: 0xaaFFFF,
-                    emissiveIntensity: 0,
-                    duration: 0.5
-                });
             };
 
             recognition.onerror = (event) => {
-                showStatus('', false);
-                console.error('Speech recognition error:', event.error);
-                if (event.error !== 'aborted') {
-                    addMessage(`Lỗi nhận diện: ${event.error}. Vui lòng thử lại.`);
-                    sounds.error.play();
-                }
-                
+                addMessage('Lỗi nhận diện giọng nói: ' + event.error);
                 isListening = false;
-                micBtn.innerHTML = '<span class="icon">🎤</span> Bật Micro';
-                
-                // Reset eye color
-                const leftEye = robotGroup.userData.leftEye;
-                const rightEye = robotGroup.userData.rightEye;
-                gsap.to([leftEye.material, rightEye.material], {
-                    color: 0xaaFFFF,
-                    emissiveIntensity: 0,
-                    duration: 0.5
-                });
+                micBtn.textContent = 'Bật Micro';
             };
 
             recognition.onend = () => {
-                showStatus('', false);
                 isListening = false;
-                micBtn.innerHTML = '<span class="icon">🎤</span> Bật Micro';
-                
-                // Reset eye color if not already done
-                const leftEye = robotGroup.userData.leftEye;
-                const rightEye = robotGroup.userData.rightEye;
-                if (leftEye.material.color.getHex() !== 0xaaFFFF) {
-                    gsap.to([leftEye.material, rightEye.material], {
-                        color: 0xaaFFFF,
-                        emissiveIntensity: 0,
-                        duration: 0.5
-                    });
-                }
+                micBtn.textContent = 'Bật Micro';
             };
         } else {
             addMessage('Trình duyệt không hỗ trợ nhận diện giọng nói.');
-            micBtn.disabled = true;
         }
 
         function toggleListening() {
             if (isListening) {
                 recognition.stop();
-                showStatus('', false);
             } else {
-                try {
-                    recognition.start();
-                } catch (error) {
-                    console.error('Recognition error:', error);
-                    setTimeout(() => {
-                        try {
-                            recognition.start();
-                        } catch (retryError) {
-                            console.error('Recognition retry failed:', retryError);
-                            addMessage('Không thể khởi động nhận diện giọng nói. Vui lòng tải lại trang.');
-                        }
-                    }, 100);
-                }
+                recognition.start();
+                isListening = true;
+                micBtn.textContent = 'Tắt Micro';
             }
         }
 
         // Gửi lệnh đến backend Flask
         async function processCommand(text) {
             try {
-                showStatus('Đang xử lý...', true);
                 console.log('Sending request to server with query:', text);
                 console.log('Using API URL:', apiUrl);
                 
@@ -1744,7 +352,7 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
+                    throw new Error(`Server responded with status: ${response.status} (${response.statusText})`);
                 }
                 
                 const data = await response.json();
@@ -1761,102 +369,57 @@
                 addMessage(result);
                 const action = determineAction(text, result);
                 speak(audioUrl, result, action);
-                
-                showStatus('', false);
             } catch (error) {
-                console.error('Error connecting to server:', error);
-                addMessage(`Lỗi kết nối: ${error.message}. Vui lòng kiểm tra server và cài đặt API URL.`);
+                console.error('Error connecting to server:', error.message);
+                addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
                 speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
-                sounds.error.play();
-                showStatus('', false);
             }
         }
 
         // Xác định hành động của robot
         function determineAction(query, response) {
             const queryLower = query.toLowerCase();
-            const responseLower = response.toLowerCase();
-            
-            // Check for laughter triggers
-            if (queryLower.includes('bạn tên là gì') || 
-                queryLower.includes('bạn là ai') || 
-                queryLower.includes('kể chuyện cười') || 
-                queryLower.includes('chuyện hài') ||
-                responseLower.includes('ha ha') ||
-                responseLower.includes('haha')) {
+            if (queryLower.includes('bạn tên là gì') || queryLower.includes('bạn là ai')) {
                 return 'laugh';
-            }
-            
-            // Check for dance triggers
-            if (queryLower.includes('mở bài hát') || 
-                queryLower.includes('mở nhạc') ||
-                queryLower.includes('phát nhạc') ||
-                queryLower.includes('nghe nhạc') ||
-                queryLower.includes('mở phim')) {
+            } else if (queryLower.includes('mở bài hát') || queryLower.includes('mở phim')) {
                 return 'dance';
-            }
-            
-            // Check for wave triggers
-            if (queryLower.includes('mở trang') || 
-                queryLower.includes('chào') || 
-                queryLower.includes('xin chào') ||
-                queryLower.includes('tạm biệt')) {
+            } else if (queryLower.includes('mở trang')) {
                 return 'wave';
-            }
-            
-            // Check for surprise triggers
-            if (responseLower.includes('không thể') || 
-                responseLower.includes('lỗi') || 
-                responseLower.includes('xin lỗi') ||
-                responseLower.includes('không hiểu')) {
+            } else if (response.includes('không') || response.includes('lỗi')) {
                 return 'surprise';
             }
-            
-            // Default to speaking animation
             return 'speak';
         }
 
         // Phát giọng nói và hành động
         function speak(audioUrl, textContent, action) {
-            isAnimating = true;
-            
-            // First play the beep sound to indicate response is starting
-            sounds.beep.play();
-            
-            // Start the animation based on action type
-            if (action === 'speak') speakAnimation();
-            else if (action === 'laugh') laughAnimation();
-            else if (action === 'wave') waveAnimation();
-            else if (action === 'dance') danceAnimation();
-            else if (action === 'surprise') surpriseAnimation();
-            
             if (audioUrl) {
                 const audio = new Audio(audioUrl);
                 let audioStarted = false;
                 
                 audio.onplay = () => {
                     audioStarted = true;
-                };
-                
-                audio.onended = () => {
-                    isAnimating = false;
+                    beepSound.play(); // Phát âm thanh "tít"
+                    if (action === 'speak') speakAnimation();
+                    else if (action === 'laugh') laughAnimation();
+                    else if (action === 'wave') waveAnimation();
+                    else if (action === 'dance') danceAnimation();
+                    else if (action === 'surprise') surpriseAnimation();
                 };
                 
                 audio.onerror = (e) => {
                     console.error('Lỗi phát âm thanh:', e);
+                    // Chỉ fallback khi không phát được âm thanh
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
-                    } else {
-                        isAnimating = false;
                     }
                 };
                 
                 audio.play().catch(error => {
                     console.error('Lỗi khi phát âm thanh:', error);
+                    // Chỉ fallback khi không phát được âm thanh
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
-                    } else {
-                        isAnimating = false;
                     }
                 });
             } else {
@@ -1866,34 +429,32 @@
         
         // Hàm phát âm thanh bằng Web Speech API
         function speakWithWebSpeechAPI(text, action) {
-            if (speechSynthesis.speaking) {
-                speechSynthesis.cancel();
-            }
-            
             const utterance = new SpeechSynthesisUtterance(text);
+            // Lấy danh sách giọng đọc
+            const voices = speechSynthesis.getVoices();
+            console.log('Available voices:', voices);
             
-            // Lấy giọng đọc từ cài đặt
-            if (currentVoice) {
-                utterance.voice = currentVoice;
-            } else {
-                // Ưu tiên tìm giọng tiếng Việt
-                const voices = speechSynthesis.getVoices();
-                let voice = voices.find(v => v.lang === 'vi-VN');
-                if (!voice) {
-                    voice = voices.find(v => v.lang.startsWith('vi'));
-                }
-                
-                if (voice) {
-                    utterance.voice = voice;
-                    currentVoice = voice;
-                }
+            // Ưu tiên tìm giọng tiếng Việt
+            let voice = voices.find(v => v.lang === 'vi-VN');
+            if (!voice) {
+                voice = voices.find(v => v.lang.startsWith('vi'));
             }
             
-            utterance.lang = 'vi-VN';
-            utterance.rate = speechRate;
+            if (voice) {
+                utterance.voice = voice;
+                utterance.lang = 'vi-VN';
+            } else {
+                console.warn('Không tìm thấy giọng tiếng Việt, sử dụng giọng mặc định');
+                utterance.lang = 'vi-VN'; // Vẫn đặt là tiếng Việt để tối đa hóa khả năng phát âm đúng
+            }
             
-            utterance.onend = () => {
-                isAnimating = false;
+            utterance.onstart = () => {
+                beepSound.play();
+                if (action === 'speak') speakAnimation();
+                else if (action === 'laugh') laughAnimation();
+                else if (action === 'wave') waveAnimation();
+                else if (action === 'dance') danceAnimation();
+                else if (action === 'surprise') surpriseAnimation();
             };
             
             speechSynthesis.speak(utterance);
@@ -1901,10 +462,18 @@
 
         // Xóa lịch sử chat
         document.getElementById('clearChatBtn').addEventListener('click', () => {
-            if (confirm('Bạn có chắc chắn muốn xóa toàn bộ cuộc hội thoại?')) {
-                chatMessages.innerHTML = '';
-                addMessage('Cuộc hội thoại đã được xóa.');
-                surpriseAnimation();
+            chatContainer.innerHTML = '';
+        });
+
+        // Thay đổi chủ đề
+        document.getElementById('themeSelect').addEventListener('change', (e) => {
+            const theme = e.target.value;
+            if (theme === 'space') {
+                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
+            } else if (theme === 'forest') {
+                document.body.style.background = 'radial-gradient(circle, #2e462e 0%, #1a2e1a 100%)';
+            } else if (theme === 'ocean') {
+                document.body.style.background = 'radial-gradient(circle, #1a3c4e 0%, #0f2a3a 100%)';
             }
         });
         
@@ -1914,56 +483,12 @@
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const apiUrlInput = document.getElementById('apiUrlInput');
-        const voiceSelect = document.getElementById('voiceSelect');
-        const voiceSpeedInput = document.getElementById('voiceSpeedInput');
-        const speedValue = document.getElementById('speedValue');
         
         // Hiển thị giá trị API URL hiện tại
         apiUrlInput.value = apiUrl;
         
-        // Cập nhật tốc độ nói
-        voiceSpeedInput.value = speechRate;
-        speedValue.textContent = speechRate.toFixed(1);
-        
-        voiceSpeedInput.addEventListener('input', () => {
-            speechRate = parseFloat(voiceSpeedInput.value);
-            speedValue.textContent = speechRate.toFixed(1);
-        });
-        
-        // Đổ các giọng nói vào select
-        function populateVoiceList() {
-            const voices = speechSynthesis.getVoices();
-            voiceSelect.innerHTML = '<option value="">Chọn giọng nói</option>';
-            
-            voices.forEach((voice, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                const voiceName = voice.name + ' (' + voice.lang + ')';
-                option.textContent = voiceName;
-                option.selected = currentVoice && currentVoice.name === voice.name;
-                voiceSelect.appendChild(option);
-            });
-        }
-        
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-        
-        populateVoiceList();
-        
-        voiceSelect.addEventListener('change', () => {
-            const voices = speechSynthesis.getVoices();
-            const selectedIndex = voiceSelect.value;
-            if (selectedIndex !== "") {
-                currentVoice = voices[selectedIndex];
-            }
-        });
-        
         settingsBtn.addEventListener('click', () => {
             settingsModal.style.display = 'block';
-            
-            // Reload voice list in case it wasn't populated correctly the first time
-            populateVoiceList();
         });
         
         closeSettingsBtn.addEventListener('click', () => {
@@ -1975,12 +500,8 @@
             if (newApiUrl) {
                 apiUrl = newApiUrl;
                 localStorage.setItem('mitApiUrl', apiUrl);
-                addMessage(`Đã cập nhật URL API thành ${apiUrl}`);
-                sounds.success.play();
+                addMessage(`Đã cập nhật URL API thành ${apiUrl}`, false);
             }
-            
-            localStorage.setItem('mitSpeechRate', speechRate.toString());
-            
             settingsModal.style.display = 'none';
         });
         
@@ -1991,18 +512,15 @@
             }
         });
         
-        // Tải tốc độ nói từ localStorage
-        const savedSpeechRate = localStorage.getItem('mitSpeechRate');
-        if (savedSpeechRate) {
-            speechRate = parseFloat(savedSpeechRate);
-            voiceSpeedInput.value = speechRate;
-            speedValue.textContent = speechRate.toFixed(1);
-        }
+        // Tải danh sách giọng nói để sẵn sàng cho Web Speech API
+        window.speechSynthesis.onvoiceschanged = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Loaded voices:', voices.length);
+        };
         
         // Thêm thông báo khi trang web đã sẵn sàng
         window.addEventListener('load', () => {
-            // Trang đã sẵn sàng, animation sẽ tự động phát
-            sounds.startup.play();
+            addMessage('Trợ lý ảo Mít đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
         });
     </script>
 </body>
