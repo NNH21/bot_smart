@@ -503,10 +503,10 @@
         
         // Âm thanh thông báo
         const sounds = {
-            beep: new Howl({ src: ['https://www.soundjay.com/buttons/beep-01a.mp3'] }),
-            startup: new Howl({ src: ['https://www.soundjay.com/mechanical/sounds/robot-movement-5.mp3'] }),
-            success: new Howl({ src: ['https://www.soundjay.com/buttons/sounds/button-35.mp3'] }),
-            error: new Howl({ src: ['https://www.soundjay.com/misc/sounds/fail-buzzer-04.mp3'] })
+            beep: new Howl({ src: ['audio/beep.mp3'], html5: true }),
+            startup: new Howl({ src: ['audio/startup.mp3'], html5: true }),
+            success: new Howl({ src: ['audio/success.mp3'], html5: true }),
+            error: new Howl({ src: ['audio/error.mp3'], html5: true })
         };
         
         // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
