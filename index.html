@@ -297,6 +297,32 @@
         // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
         
+        // Thêm hàm gửi trạng thái tới ESP8266 qua API
+        function updateLcdStatus(state) {
+            try {
+                fetch(`${apiUrl}/update_lcd_state`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ state: state })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error(`Error updating LCD state: ${response.status}`);
+                    } else {
+                        console.log(`Updated LCD state to ${state}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending LCD state update:', error);
+                });
+            } catch (error) {
+                console.error('Error in updateLcdStatus:', error);
+            }
+        }
+        
         // Khởi tạo Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
@@ -486,12 +512,22 @@
             recognition.onerror = (event) => {
                 addMessage('Lỗi nhận diện giọng nói: ' + event.error);
                 isListening = false;
-                micBtn.textContent = 'Bật Micro';
+                micBtn.textContent = '🎤 Bật Micro';
+                micBtn.classList.remove('active');
+                // Đặt lại trạng thái về READY trong trường hợp lỗi
+                updateLcdStatus("READY");
             };
 
             recognition.onend = () => {
                 isListening = false;
-                micBtn.textContent = 'Bật Micro';
+                micBtn.textContent = '🎤 Bật Micro';
+                micBtn.classList.remove('active');
+                // Nếu người dùng không nói gì, đặt lại trạng thái về READY
+                setTimeout(() => {
+                    if (!speechSynthesis.speaking) {
+                        updateLcdStatus("READY");
+                    }
+                }, 500);
             };
         } else {
             addMessage('Trình duyệt không hỗ trợ nhận diện giọng nói.');
@@ -500,10 +536,18 @@
         function toggleListening() {
             if (isListening) {
                 recognition.stop();
+                isListening = false;
+                micBtn.textContent = '🎤 Bật Micro';
+                micBtn.classList.remove('active');
+                // Chuyển về trạng thái sẵn sàng
+                updateLcdStatus("READY");
             } else {
                 recognition.start();
                 isListening = true;
-                micBtn.textContent = 'Tắt Micro';
+                micBtn.textContent = '🎤 Tắt Micro';
+                micBtn.classList.add('active');
+                // Chuyển sang trạng thái lắng nghe
+                updateLcdStatus("LISTENING");
             }
         }
 
@@ -512,6 +556,9 @@
             try {
                 console.log('Sending request to server with query:', text);
                 console.log('Using API URL:', apiUrl);
+                
+                // Chắc chắn rằng trạng thái là LISTENING khi xử lý lệnh
+                updateLcdStatus("LISTENING");
                 
                 const response = await fetch(`${apiUrl}/process`, {
                     method: 'POST',
@@ -539,11 +586,17 @@
                 
                 addMessage(result);
                 const action = determineAction(text, result);
+                
+                // Chuyển sang trạng thái đã trả lời
+                updateLcdStatus("ANSWERED");
+                
                 speak(audioUrl, result, action);
             } catch (error) {
                 console.error('Error connecting to server:', error.message);
                 addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
                 speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
+                // Đặt lại trạng thái về READY trong trường hợp lỗi
+                updateLcdStatus("READY");
             }
         }
 
@@ -579,6 +632,7 @@
                 
                 audio.onended = () => {
                     beepSound.play(); // Phát âm thanh "tít" khi bot hoàn thành câu trả lời
+                    // ESP8266 sẽ tự động chuyển về trạng thái READY sau 2 giây
                 };
                 
                 audio.onerror = (e) => {
@@ -587,6 +641,8 @@
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
                     }
+                    // Đặt lại trạng thái trong trường hợp lỗi
+                    updateLcdStatus("READY");
                 };
                 
                 audio.play().catch(error => {
@@ -595,6 +651,8 @@
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
                     }
+                    // Đặt lại trạng thái trong trường hợp lỗi
+                    updateLcdStatus("READY");
                 });
             } else {
                 speakWithWebSpeechAPI(textContent, action);
@@ -632,6 +690,7 @@
             
             utterance.onend = () => {
                 beepSound.play(); // Phát âm thanh "tít" khi nói xong
+                // ESP8266 sẽ tự động chuyển về trạng thái READY sau 2 giây
             };
             
             speechSynthesis.speak(utterance);
