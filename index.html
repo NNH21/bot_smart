@@ -395,7 +395,10 @@
         function speak(audioUrl, textContent, action) {
             if (audioUrl) {
                 const audio = new Audio(audioUrl);
+                let audioStarted = false;
+                
                 audio.onplay = () => {
+                    audioStarted = true;
                     beepSound.play(); // Phát âm thanh "tít"
                     if (action === 'speak') speakAnimation();
                     else if (action === 'laugh') laughAnimation();
@@ -406,13 +409,18 @@
                 
                 audio.onerror = (e) => {
                     console.error('Lỗi phát âm thanh:', e);
-                    // Fallback sang Web Speech API nếu không tải được audio
-                    speakWithWebSpeechAPI(textContent, action);
+                    // Chỉ fallback khi không phát được âm thanh
+                    if (!audioStarted) {
+                        speakWithWebSpeechAPI(textContent, action);
+                    }
                 };
                 
                 audio.play().catch(error => {
                     console.error('Lỗi khi phát âm thanh:', error);
-                    speakWithWebSpeechAPI(textContent, action);
+                    // Chỉ fallback khi không phát được âm thanh
+                    if (!audioStarted) {
+                        speakWithWebSpeechAPI(textContent, action);
+                    }
                 });
             } else {
                 speakWithWebSpeechAPI(textContent, action);

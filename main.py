@@ -84,7 +84,11 @@ def process():
     # Chuyển phản hồi thành file âm thanh tiếng Việt bằng gTTS
     try:
         audio_filename = f"response_{int(time.time())}.mp3"
-        audio_path = os.path.join(AUDIO_DIR, audio_filename)
+        # Use absolute path for audio directory
+        audio_dir_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audio')
+        if not os.path.exists(audio_dir_path):
+            os.makedirs(audio_dir_path)
+        audio_path = os.path.join(audio_dir_path, audio_filename)
         # Sử dụng tham số slow để điều chỉnh tốc độ nói dựa trên SPEECH_RATE
         is_slow = SPEECH_RATE <= 0.8
         tts = gTTS(text=response, lang='vi', slow=is_slow)
@@ -99,10 +103,12 @@ def process():
 
 @app.route('/audio/<filename>', methods=['GET'])
 def serve_audio(filename):
-    audio_path = os.path.join('audio', filename)  # Define the audio_path variable
+    # Use absolute path for audio files
+    audio_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audio', filename)
     if os.path.exists(audio_path):
         return send_file(audio_path, mimetype='audio/mpeg')
     else:
+        logging.error(f"File không tồn tại: {audio_path}")
         return jsonify({'error': 'File âm thanh không tồn tại.'}), 404
 
 @app.route('/set_speech_rate', methods=['POST'])
