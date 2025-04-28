@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Cấu hình cho trợ lý ảo
-ASSISTANT_NAME = "Mít"
+ASSISTANT_NAME = "Mis"
 WAKE_WORDS = ["hey mít", "hây mít", "hey mit", "hay mit", "hây mis", "hey mít", 
              "hay mít", "này mít", "này mit", "hey me", "hây mi", "hi mít", 
              "hi mit", "hey miss", "hây mi", "này mi", "n mít", "mít ơi", 

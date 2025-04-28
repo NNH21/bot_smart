@@ -6,6 +6,7 @@ import os
 import time
 import serial
 import threading
+import atexit
 from gtts import gTTS
 from config import SPEECH_RATE
 import pygame
@@ -30,80 +31,104 @@ BEEP_SOUND = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 # Biến để lưu kết nối serial
 ser = None
 serial_lock = threading.Lock()
+connection_check_active = True
 
 # Kết nối với ESP8266 qua cổng serial
 def connect_to_esp():
     global ser
     try:
-        # Tìm cổng COM phù hợp - thử qua nhiều cổng phổ biến
-        possible_ports = ['COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'COM10', 'COM11', 'COM12']
+        # Đảm bảo đóng kết nối cũ nếu còn mở
+        close_connection()
         
-        for port in possible_ports:
-            try:
-                # Thử mở cổng và đóng lại để kiểm tra
-                test_ser = serial.Serial(port, 115200, timeout=1)
-                test_ser.close()
-                
-                # Nếu không lỗi, mở lại kết nối và sử dụng
-                ser = serial.Serial(port, 115200, timeout=1)
-                time.sleep(2)  # Đợi ESP8266 khởi động lại sau khi kết nối Serial
-                logging.info(f"Đã kết nối với ESP8266 qua cổng {port}")
-                
-                # Gửi lệnh kiểm tra
-                with serial_lock:
-                    test_command = "STATE:READY\n"
-                    ser.write(test_command.encode())
-                    time.sleep(0.5)
-                    response = ser.readline().decode('utf-8', errors='ignore').strip()
-                    if response:
-                        logging.info(f"ESP8266 phản hồi: {response}")
-                
-                return True
-            except Exception as e:
-                logging.warning(f"Không thể kết nối với cổng {port}: {e}")
-                continue
+        # Chỉ kết nối với cổng COM4 theo yêu cầu
+        port = 'COM4'
+        try:
+            # Thử mở kết nối
+            ser = serial.Serial(port, 115200, timeout=1)
+            time.sleep(2)  # Đợi ESP8266 khởi động lại sau khi kết nối Serial
+            logging.info(f"Đã kết nối với ESP8266 qua cổng {port}")
+            
+            # Gửi lệnh kiểm tra
+            with serial_lock:
+                test_command = "STATE:READY\n"
+                ser.write(test_command.encode())
+                time.sleep(0.5)
+                response = ser.readline().decode('utf-8', errors='ignore').strip()
+                if response:
+                    logging.info(f"ESP8266 phản hồi: {response}")
+            
+            return True
+        except Exception as e:
+            logging.warning(f"Không thể kết nối với cổng {port}: {e}")
+            return False
         
-        logging.warning("Không thể kết nối với ESP8266 trên bất kỳ cổng nào")
-        return False
     except Exception as e:
         logging.error(f"Lỗi tổng thể khi kết nối với ESP8266: {e}")
         return False
 
+# Đóng kết nối với ESP8266
+def close_connection():
+    global ser
+    try:
+        if ser is not None and ser.is_open:
+            with serial_lock:
+                ser.close()
+                logging.info("Đã đóng kết nối với ESP8266")
+        ser = None
+    except Exception as e:
+        logging.error(f"Lỗi khi đóng kết nối Serial: {e}")
+
+# Đảm bảo đóng kết nối khi tắt chương trình
+atexit.register(close_connection)
+
 # Gửi trạng thái đến ESP8266
 def send_state_to_esp(state):
     global ser
-    if ser is None or not ser.is_open:
-        if not connect_to_esp():
-            logging.error("Không thể kết nối với ESP8266")
-            return False
+    max_attempts = 3  # Số lần thử lại tối đa
     
-    try:
-        with serial_lock:
-            command = f"STATE:{state}\n"
-            # Gửi lệnh và đảm bảo dữ liệu được ghi
-            ser.write(command.encode())
-            ser.flush()
-            time.sleep(0.1)  # Đợi một chút để ESP8266 xử lý
-            logging.info(f"Đã gửi trạng thái {state} đến ESP8266")
+    for attempt in range(max_attempts):
+        if ser is None or not ser.is_open:
+            if not connect_to_esp():
+                logging.error(f"Không thể kết nối với ESP8266 (lần thử {attempt+1}/{max_attempts})")
+                time.sleep(0.5)  # Đợi một chút trước khi thử lại
+                continue
+        
+        try:
+            with serial_lock:
+                command = f"STATE:{state}\n"
+                # Gửi lệnh và đảm bảo dữ liệu được ghi
+                ser.write(command.encode())
+                ser.flush()
+                time.sleep(0.1)  # Đợi một chút để ESP8266 xử lý
+                logging.info(f"Đã gửi trạng thái {state} đến ESP8266")
+                
+                # Đọc phản hồi để xác nhận ESP8266 đã nhận được lệnh
+                response = ser.readline().decode('utf-8', errors='ignore').strip()
+                if response:
+                    logging.info(f"ESP8266 phản hồi sau khi gửi trạng thái: {response}")
+                
+            return True
+        except Exception as e:
+            logging.error(f"Lỗi khi gửi trạng thái đến ESP8266: {e}")
+            close_connection()  # Đóng kết nối để thử lại
             
-            # Đọc phản hồi để xác nhận ESP8266 đã nhận được lệnh
-            response = ser.readline().decode('utf-8', errors='ignore').strip()
-            if response:
-                logging.info(f"ESP8266 phản hồi sau khi gửi trạng thái: {response}")
-            
-        return True
-    except Exception as e:
-        logging.error(f"Lỗi khi gửi trạng thái đến ESP8266: {e}")
-        ser = None  # Đánh dấu mất kết nối
-        return False
+    return False
 
 # Kiểm tra kết nối ESP8266 định kỳ
 def check_esp_connection():
-    global ser
-    while True:
+    global ser, connection_check_active
+    while connection_check_active:
         if ser is None or not ser.is_open:
             connect_to_esp()
         time.sleep(30)  # Kiểm tra mỗi 30 giây
+
+# Dừng thread kiểm tra kết nối
+def stop_connection_check():
+    global connection_check_active
+    connection_check_active = False
+
+# Đăng ký dừng thread kiểm tra khi tắt chương trình
+atexit.register(stop_connection_check)
 
 # Phát âm thanh beep
 def play_beep():
@@ -222,4 +247,4 @@ if __name__ == "__main__":
     send_state_to_esp("READY")
     
     logging.info("Starting Flask server on port 5000")
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000, host='0.0.0.0')
