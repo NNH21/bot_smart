@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trợ lý ảo Mít 3D</title>
+    <title>Trợ lý ảo Mít</title>
     <style>
         * {
             margin: 0;
@@ -17,11 +17,16 @@
             color: white;
             transition: background 0.8s ease;
         }
-        #canvas {
+        #canvas-container {
             width: 100vw;
             height: 65vh;
+            overflow: hidden;
+            position: relative;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
             display: block;
-            transition: height 0.3s ease;
         }
         .chat-container {
             position: absolute;
@@ -250,7 +255,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
         
-        /* Thêm style cho slider popup */
+        /* Speed slider modal */
         #speedModal {
             display: none;
             position: fixed;
@@ -304,10 +309,382 @@
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
             border: none;
         }
+
+        /* Robot styles */
+        #robot-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 380px;
+        }
+
+        /* Star background */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* Robot parts */
+        .robot-head {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            border-radius: 50%;
+            top: 0;
+            left: calc(50% - 80px);
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .robot-face {
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            background: #ffffff;
+            border-radius: 50%;
+            top: 15px;
+            left: 15px;
+        }
+
+        .robot-eye {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #333;
+            border-radius: 50%;
+            top: 40px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset;
+            transition: all 0.3s;
+        }
+
+        .robot-eye::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            top: 5px;
+            left: 5px;
+        }
+
+        .robot-eye.left {
+            left: 35px;
+        }
+
+        .robot-eye.right {
+            right: 35px;
+        }
+
+        .robot-mouth {
+            position: absolute;
+            width: 60px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            bottom: 35px;
+            left: calc(50% - 30px);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .robot-mouth-inner {
+            position: absolute;
+            width: 60px;
+            height: 10px;
+            background: #FF5252;
+            bottom: 0;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .robot-body {
+            position: absolute;
+            width: 180px;
+            height: 200px;
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            border-radius: 40px;
+            top: 140px;
+            left: calc(50% - 90px);
+            z-index: 9;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .robot-panel {
+            position: absolute;
+            width: 120px;
+            height: 140px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 20px;
+            top: 30px;
+            left: calc(50% - 60px);
+        }
+
+        .robot-button {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #FF5252;
+            border-radius: 50%;
+            top: 15px;
+        }
+
+        .robot-button:nth-child(1) {
+            left: 30px;
+            background: #FF5252;
+        }
+
+        .robot-button:nth-child(2) {
+            left: 60px;
+            background: #FFEB3B;
+        }
+
+        .robot-button:nth-child(3) {
+            left: 90px;
+            background: #4CAF50;
+        }
+
+        .robot-indicator {
+            position: absolute;
+            width: 80px;
+            height: 10px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 5px;
+            top: 40px;
+            left: calc(50% - 40px);
+            overflow: hidden;
+        }
+
+        .robot-indicator::after {
+            content: '';
+            position: absolute;
+            height: 100%;
+            border-radius: 5px;
+            background: #4285F4;
+            animation: indicatorPulse 2s infinite;
+        }
+
+        @keyframes indicatorPulse {
+            0% { width: 0%; left: 0; }
+            50% { width: 30%; left: 70%; }
+            100% { width: 0%; left: 100%; }
+        }
+
+        .robot-arm {
+            position: absolute;
+            width: 30px;
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            border-radius: 15px;
+            z-index: 8;
+        }
+
+        .robot-arm.left {
+            height: 120px;
+            left: 15px;
+            top: 180px;
+            transform-origin: top center;
+            transform: rotate(15deg);
+            transition: transform 0.5s;
+        }
+
+        .robot-arm.right {
+            height: 120px;
+            right: 15px;
+            top: 180px;
+            transform-origin: top center;
+            transform: rotate(-15deg);
+            transition: transform 0.5s;
+        }
+
+        .robot-hand {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 20px;
+            bottom: -20px;
+            left: -5px;
+        }
+
+        .robot-leg {
+            position: absolute;
+            width: 35px;
+            height: 100px;
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            border-radius: 20px;
+            top: 320px;
+            z-index: 7;
+        }
+
+        .robot-leg.left {
+            left: 70px;
+            transform-origin: top center;
+            transition: transform 0.5s;
+        }
+
+        .robot-leg.right {
+            right: 70px;
+            transform-origin: top center;
+            transition: transform 0.5s;
+        }
+
+        .robot-foot {
+            position: absolute;
+            width: 50px;
+            height: 20px;
+            background: #fff;
+            border-radius: 10px;
+            bottom: -10px;
+            left: -8px;
+        }
+
+        .robot-antenna {
+            position: absolute;
+            width: 8px;
+            height: 30px;
+            background: linear-gradient(to top, #4285F4, #34A853);
+            border-radius: 4px;
+            top: -25px;
+            left: calc(50% - 4px);
+        }
+
+        .robot-antenna::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #FFEB3B;
+            border-radius: 50%;
+            top: -10px;
+            left: -4px;
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #FFEB3B; }
+            to { box-shadow: 0 0 20px #FFEB3B; }
+        }
+
+        /* Robot animations */
+        @keyframes talking {
+            0%, 100% { height: 20px; border-radius: 10px; }
+            50% { height: 30px; border-radius: 15px; }
+        }
+
+        @keyframes smiling {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.5) scaleX(1.2); }
+        }
+
+        @keyframes waving {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(-45deg); }
+        }
+
+        @keyframes dancing {
+            0% { transform: translateY(0) rotate(0); }
+            25% { transform: translateY(-15px) rotate(5deg); }
+            50% { transform: translateY(0) rotate(0); }
+            75% { transform: translateY(-15px) rotate(-5deg); }
+            100% { transform: translateY(0) rotate(0); }
+        }
+
+        @keyframes surprised {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+        }
+
+        /* Stars background animation */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100vh); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                right: 10px;
+                gap: 8px;
+            }
+            
+            .controls button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .theme-selector {
+                left: 10px;
+            }
+            
+            .theme-selector select {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+
+            #robot-container {
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+
+        @media (max-width: 480px) {
+            #robot-container {
+                transform: translate(-50%, -50%) scale(0.6);
+            }
+
+            .controls button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
+    <div id="canvas-container">
+        <div id="robot-container">
+            <div class="robot-head">
+                <div class="robot-antenna"></div>
+                <div class="robot-face">
+                    <div class="robot-eye left"></div>
+                    <div class="robot-eye right"></div>
+                    <div class="robot-mouth">
+                        <div class="robot-mouth-inner"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="robot-body">
+                <div class="robot-panel">
+                    <div class="robot-button"></div>
+                    <div class="robot-button"></div>
+                    <div class="robot-button"></div>
+                    <div class="robot-indicator"></div>
+                </div>
+            </div>
+            <div class="robot-arm left">
+                <div class="robot-hand"></div>
+            </div>
+            <div class="robot-arm right">
+                <div class="robot-hand"></div>
+            </div>
+            <div class="robot-leg left">
+                <div class="robot-foot"></div>
+            </div>
+            <div class="robot-leg right">
+                <div class="robot-foot"></div>
+            </div>
+        </div>
+    </div>
+    
     <div class="status-indicator" id="statusIndicator">Đang lắng nghe...</div>
     <div class="controls">
         <button id="micBtn">🎤 Bật Micro</button>
@@ -339,7 +716,7 @@
         </div>
     </div>
     
-    <!-- Thêm modal điều chỉnh tốc độ -->
+    <!-- Speed modal -->
     <div id="speedModal">
         <div class="modal-content">
             <h2>Điều chỉnh tốc độ nói</h2>
@@ -362,22 +739,113 @@
     
     <div class="chat-container" id="chatContainer"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.11.3/dist/gsap.min.js"></script>
     <script>
-        // Biến toàn cục
+        // Global variables
         let isListening = false;
         let recognition;
         let speechSynthesis = window.speechSynthesis;
-        const beepSound = new Audio('audio/beep.mp3'); // Âm thanh "tít" từ thư mục audio
+        let beepSound = new Audio('audio/beep.mp3');
+        let errorSound = new Audio('audio/error.mp3');
+        let currentAnimation = null;
         
-        // Khởi tạo API URL - lấy từ localStorage hoặc mặc định
+        // API URL from localStorage or default
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
         
-        // Thêm biến tốc độ nói
+        // Speech rate
         let speechRate = localStorage.getItem('speechRate') || 1.0;
         
-        // Thêm hàm gửi trạng thái tới ESP8266 qua API
+        // DOM elements
+        const robotMouth = document.querySelector('.robot-mouth');
+        const robotEyeLeft = document.querySelector('.robot-eye.left');
+        const robotEyeRight = document.querySelector('.robot-eye.right');
+        const robotArmLeft = document.querySelector('.robot-arm.left');
+        const robotArmRight = document.querySelector('.robot-arm.right');
+        const robotLegLeft = document.querySelector('.robot-leg.left');
+        const robotLegRight = document.querySelector('.robot-leg.right');
+        const robotBody = document.querySelector('.robot-body');
+        const robotHead = document.querySelector('.robot-head');
+        
+        // Create stars for the background
+        function createStars() {
+            const container = document.getElementById('canvas-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // Random size between 1-3px
+                const size = Math.random() * 2 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                
+                // Random position
+                star.style.left = Math.random() * containerRect.width + 'px';
+                star.style.top = Math.random() * containerRect.height + 'px';
+                
+                // Animation
+                star.style.animation = `twinkle ${Math.random() * 3 + 2}s infinite alternate, floatUp ${Math.random() * 60 + 60}s linear infinite`;
+                star.style.animationDelay = Math.random() * 5 + 's';
+                
+                container.appendChild(star);
+            }
+        }
+        
+        // Create stars when page loads
+        window.addEventListener('load', createStars);
+
+        // Robot animations
+        function startAnimation(type) {
+            // Stop any current animation
+            stopAnimation();
+            
+            // Set the current animation
+            currentAnimation = type;
+            
+            switch(type) {
+                case 'speak':
+                    robotMouth.style.animation = 'talking 0.5s infinite';
+                    break;
+                case 'smile':
+                    robotMouth.style.animation = 'smiling 1s infinite';
+                    break;
+                case 'wave':
+                    robotArmRight.style.animation = 'waving 1s infinite';
+                    robotMouth.style.animation = 'smiling 1s infinite';
+                    break;
+                case 'dance':
+                    robotBody.style.animation = 'dancing 2s infinite';
+                    robotArmLeft.style.animation = 'waving 1s infinite';
+                    robotArmRight.style.animation = 'waving 1s infinite alternate';
+                    robotLegLeft.style.transform = 'rotate(5deg)';
+                    robotLegRight.style.transform = 'rotate(-5deg)';
+                    robotMouth.style.animation = 'smiling 1s infinite';
+                    break;
+                case 'surprise':
+                    robotEyeLeft.style.animation = 'surprised 0.5s infinite';
+                    robotEyeRight.style.animation = 'surprised 0.5s infinite';
+                    robotMouth.style.height = '30px';
+                    robotMouth.style.borderRadius = '15px';
+                    break;
+            }
+        }
+        
+        function stopAnimation() {
+            robotMouth.style.animation = '';
+            robotEyeLeft.style.animation = '';
+            robotEyeRight.style.animation = '';
+            robotArmLeft.style.animation = '';
+            robotArmRight.style.animation = '';
+            robotBody.style.animation = '';
+            robotLegLeft.style.transform = '';
+            robotLegRight.style.transform = '';
+            robotMouth.style.height = '';
+            robotMouth.style.borderRadius = '';
+            
+            currentAnimation = null;
+        }
+        
+        // Send state to ESP8266 via API
         function updateLcdStatus(state) {
             try {
                 fetch(`${apiUrl}/update_lcd_state`, {
@@ -402,169 +870,8 @@
                 console.error('Error in updateLcdStatus:', error);
             }
         }
-        
-        // Khởi tạo Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
-        camera.position.z = 5;
 
-        // Ánh sáng
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
-
-        // Robot 3D
-        const robotGroup = new THREE.Group();
-        const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
-        const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        robotGroup.add(body);
-
-        // Mắt
-        const eyeGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-        const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
-        const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        leftEye.position.set(-0.4, 0.3, 0.8);
-        robotGroup.add(leftEye);
-        const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-        rightEye.position.set(0.4, 0.3, 0.8);
-        robotGroup.add(rightEye);
-
-        // Môi
-        const mouthGeometry = new THREE.BoxGeometry(0.5, 0.1, 0.1);
-        const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-        const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-        mouth.position.set(0, -0.2, 0.9);
-        robotGroup.add(mouth);
-
-        // Tay
-        const armGeometry = new THREE.BoxGeometry(0.2, 1, 0.2);
-        const armMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-        const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-        leftArm.position.set(-1.2, -0.3, 0);
-        robotGroup.add(leftArm);
-        const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-        rightArm.position.set(1.2, -0.3, 0);
-        robotGroup.add(rightArm);
-
-        // Chân
-        const legGeometry = new THREE.BoxGeometry(0.3, 1, 0.3);
-        const legMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-        const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
-        leftLeg.position.set(-0.5, -1.5, 0);
-        robotGroup.add(leftLeg);
-        const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
-        rightLeg.position.set(0.5, -1.5, 0);
-        robotGroup.add(rightLeg);
-
-        scene.add(robotGroup);
-
-        // Hiệu ứng nền (ngôi sao)
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
-        const starsVertices = [];
-        for (let i = 0; i < 1000; i++) {
-            const x = (Math.random() - 0.5) * 200;
-            const y = (Math.random() - 0.5) * 200;
-            const z = (Math.random() - 0.5) * 200;
-            starsVertices.push(x, y, z);
-        }
-        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
-        const stars = new THREE.Points(starsGeometry, starsMaterial);
-        scene.add(stars);
-
-        // Animation
-        let time = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.05;
-            stars.rotation.y += 0.001;
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Hành động của robot
-        function speakAnimation() {
-            const speak = (t) => {
-                mouth.scale.y = 1 + Math.sin(t * 10) * 0.3;
-                if (speechSynthesis.speaking) {
-                    requestAnimationFrame(() => speak(t + 0.1));
-                } else {
-                    mouth.scale.y = 1;
-                }
-            };
-            speak(time);
-        }
-
-        function laughAnimation() {
-            const laugh = (t) => {
-                robotGroup.position.y = Math.sin(t * 5) * 0.2;
-                leftEye.scale.set(1, 0.5, 1);
-                rightEye.scale.set(1, 0.5, 1);
-                if (t < 2) {
-                    requestAnimationFrame(() => laugh(t + 0.1));
-                } else {
-                    robotGroup.position.y = 0;
-                    leftEye.scale.set(1, 1, 1);
-                    rightEye.scale.set(1, 1, 1);
-                }
-            };
-            laugh(time);
-        }
-
-        function waveAnimation() {
-            const wave = (t) => {
-                rightArm.rotation.z = Math.sin(t * 5) * 0.5;
-                if (t < 2) {
-                    requestAnimationFrame(() => wave(t + 0.1));
-                } else {
-                    rightArm.rotation.z = 0;
-                }
-            };
-            wave(time);
-        }
-
-        function danceAnimation() {
-            const dance = (t) => {
-                robotGroup.rotation.y = Math.sin(t * 3) * 0.3;
-                leftArm.rotation.z = Math.sin(t * 5) * 0.5;
-                rightArm.rotation.z = Math.sin(t * 5 + Math.PI) * 0.5;
-                leftLeg.rotation.z = Math.sin(t * 5) * 0.3;
-                rightLeg.rotation.z = Math.sin(t * 5 + Math.PI) * 0.3;
-                if (t < 3) {
-                    requestAnimationFrame(() => dance(t + 0.1));
-                } else {
-                    robotGroup.rotation.y = 0;
-                    leftArm.rotation.z = 0;
-                    rightArm.rotation.z = 0;
-                    leftLeg.rotation.z = 0;
-                    rightLeg.rotation.z = 0;
-                }
-            };
-            dance(time);
-        }
-
-        function surpriseAnimation() {
-            const surprise = (t) => {
-                leftEye.scale.set(1.5, 1.5, 1.5);
-                rightEye.scale.set(1.5, 1.5, 1.5);
-                robotGroup.position.z = -0.5 + Math.sin(t * 5) * 0.2;
-                if (t < 2) {
-                    requestAnimationFrame(() => surprise(t + 0.1));
-                } else {
-                    leftEye.scale.set(1, 1, 1);
-                    rightEye.scale.set(1, 1, 1);
-                    robotGroup.position.z = 0;
-                }
-            };
-            surprise(time);
-        }
-
-        // Khung chat
+        // Chat messages
         const chatContainer = document.getElementById('chatContainer');
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
@@ -574,9 +881,10 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Nhận diện giọng nói
+        // Speech recognition
         const micBtn = document.getElementById('micBtn');
         micBtn.addEventListener('click', toggleListening);
+        
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'vi-VN';
@@ -594,7 +902,6 @@
                 isListening = false;
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                // Đặt lại trạng thái về READY trong trường hợp lỗi
                 updateLcdStatus("READY");
             };
 
@@ -602,7 +909,6 @@
                 isListening = false;
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                // Nếu người dùng không nói gì, đặt lại trạng thái về READY
                 setTimeout(() => {
                     if (!speechSynthesis.speaking) {
                         updateLcdStatus("READY");
@@ -619,25 +925,22 @@
                 isListening = false;
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                // Chuyển về trạng thái sẵn sàng
                 updateLcdStatus("READY");
             } else {
                 recognition.start();
                 isListening = true;
                 micBtn.textContent = '🎤 Tắt Micro';
                 micBtn.classList.add('active');
-                // Chuyển sang trạng thái lắng nghe
                 updateLcdStatus("LISTENING");
             }
         }
 
-        // Gửi lệnh đến backend Flask
+        // Process command
         async function processCommand(text) {
             try {
                 console.log('Sending request to server with query:', text);
                 console.log('Using API URL:', apiUrl);
                 
-                // Chắc chắn rằng trạng thái là LISTENING khi xử lý lệnh
                 updateLcdStatus("LISTENING");
                 
                 const response = await fetch(`${apiUrl}/process`, {
@@ -659,7 +962,6 @@
                 const result = data.response;
                 let audioUrl = data.audio_url;
                 
-                // Đảm bảo URL âm thanh là tuyệt đối
                 if (audioUrl && !audioUrl.startsWith('http')) {
                     audioUrl = `${apiUrl}${audioUrl}`;
                 }
@@ -667,7 +969,6 @@
                 addMessage(result);
                 const action = determineAction(text, result);
                 
-                // Chuyển sang trạng thái đã trả lời
                 updateLcdStatus("ANSWERED");
                 
                 speak(audioUrl, result, action);
@@ -675,16 +976,16 @@
                 console.error('Error connecting to server:', error.message);
                 addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
                 speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
-                // Đặt lại trạng thái về READY trong trường hợp lỗi
+                errorSound.play();
                 updateLcdStatus("READY");
             }
         }
 
-        // Xác định hành động của robot
+        // Determine robot action based on query and response
         function determineAction(query, response) {
             const queryLower = query.toLowerCase();
             if (queryLower.includes('bạn tên là gì') || queryLower.includes('bạn là ai')) {
-                return 'laugh';
+                return 'smile';
             } else if (queryLower.includes('mở bài hát') || queryLower.includes('mở phim')) {
                 return 'dance';
             } else if (queryLower.includes('mở trang')) {
@@ -695,7 +996,7 @@
             return 'speak';
         }
 
-        // Phát giọng nói và hành động
+        // Speech synthesis
         function speak(audioUrl, textContent, action) {
             if (audioUrl) {
                 const audio = new Audio(audioUrl);
@@ -703,35 +1004,29 @@
                 
                 audio.onplay = () => {
                     audioStarted = true;
-                    if (action === 'speak') speakAnimation();
-                    else if (action === 'laugh') laughAnimation();
-                    else if (action === 'wave') waveAnimation();
-                    else if (action === 'dance') danceAnimation();
-                    else if (action === 'surprise') surpriseAnimation();
+                    startAnimation(action);
                 };
                 
                 audio.onended = () => {
-                    beepSound.play(); // Phát âm thanh "tít" khi bot hoàn thành câu trả lời
-                    // ESP8266 sẽ tự động chuyển về trạng thái READY sau 2 giây
+                    beepSound.play();
+                    setTimeout(() => {
+                        stopAnimation();
+                    }, 1000);
                 };
                 
                 audio.onerror = (e) => {
-                    console.error('Lỗi phát âm thanh:', e);
-                    // Chỉ fallback khi không phát được âm thanh
+                    console.error('Error playing audio:', e);
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
                     }
-                    // Đặt lại trạng thái trong trường hợp lỗi
                     updateLcdStatus("READY");
                 };
                 
                 audio.play().catch(error => {
-                    console.error('Lỗi khi phát âm thanh:', error);
-                    // Chỉ fallback khi không phát được âm thanh
+                    console.error('Error playing audio:', error);
                     if (!audioStarted) {
                         speakWithWebSpeechAPI(textContent, action);
                     }
-                    // Đặt lại trạng thái trong trường hợp lỗi
                     updateLcdStatus("READY");
                 });
             } else {
@@ -739,15 +1034,14 @@
             }
         }
         
-        // Hàm phát âm thanh bằng Web Speech API
+        // Web Speech API fallback
         function speakWithWebSpeechAPI(text, action) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = speechRate; // Áp dụng tốc độ nói
-            // Lấy danh sách giọng đọc
-            const voices = speechSynthesis.getVoices();
-            console.log('Available voices:', voices);
+            utterance.rate = speechRate;
             
-            // Ưu tiên tìm giọng tiếng Việt
+            const voices = speechSynthesis.getVoices();
+            
+            // Find Vietnamese voice
             let voice = voices.find(v => v.lang === 'vi-VN');
             if (!voice) {
                 voice = voices.find(v => v.lang.startsWith('vi'));
@@ -757,32 +1051,30 @@
                 utterance.voice = voice;
                 utterance.lang = 'vi-VN';
             } else {
-                console.warn('Không tìm thấy giọng tiếng Việt, sử dụng giọng mặc định');
-                utterance.lang = 'vi-VN'; // Vẫn đặt là tiếng Việt để tối đa hóa khả năng phát âm đúng
+                console.warn('No Vietnamese voice found, using default voice');
+                utterance.lang = 'vi-VN';
             }
             
             utterance.onstart = () => {
-                if (action === 'speak') speakAnimation();
-                else if (action === 'laugh') laughAnimation();
-                else if (action === 'wave') waveAnimation();
-                else if (action === 'dance') danceAnimation();
-                else if (action === 'surprise') surpriseAnimation();
+                startAnimation(action);
             };
             
             utterance.onend = () => {
-                beepSound.play(); // Phát âm thanh "tít" khi nói xong
-                // ESP8266 sẽ tự động chuyển về trạng thái READY sau 2 giây
+                beepSound.play();
+                setTimeout(() => {
+                    stopAnimation();
+                }, 1000);
             };
             
             speechSynthesis.speak(utterance);
         }
 
-        // Xóa lịch sử chat
+        // Clear chat history
         document.getElementById('clearChatBtn').addEventListener('click', () => {
             chatContainer.innerHTML = '';
         });
 
-        // Thay đổi chủ đề
+        // Theme selection
         document.getElementById('themeSelect').addEventListener('change', (e) => {
             const theme = e.target.value;
             if (theme === 'space') {
@@ -798,14 +1090,13 @@
             }
         });
         
-        // Xử lý modal cài đặt
+        // Settings modal
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsModal = document.getElementById('settingsModal');
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const apiUrlInput = document.getElementById('apiUrlInput');
         
-        // Hiển thị giá trị API URL hiện tại
         apiUrlInput.value = apiUrl;
         
         settingsBtn.addEventListener('click', () => {
@@ -826,14 +1117,7 @@
             settingsModal.style.display = 'none';
         });
         
-        // Đóng modal nếu click bên ngoài
-        window.addEventListener('click', (e) => {
-            if (e.target === settingsModal) {
-                settingsModal.style.display = 'none';
-            }
-        });
-        
-        // Xử lý modal tốc độ
+        // Speed modal
         const speedBtn = document.getElementById('speedBtn');
         const speedModal = document.getElementById('speedModal');
         const closeSpeedBtn = document.getElementById('closeSpeedBtn');
@@ -841,7 +1125,6 @@
         const speedSlider = document.getElementById('speedSlider');
         const speedValue = document.getElementById('speedValue');
         
-        // Hiển thị giá trị tốc độ hiện tại
         speedSlider.value = speechRate;
         speedValue.textContent = speechRate;
         
@@ -859,7 +1142,6 @@
                 speechRate = newSpeechRate;
                 localStorage.setItem('speechRate', speechRate);
                 
-                // Send the new speech rate to the backend
                 fetch(`${apiUrl}/set_speech_rate`, {
                     method: 'POST',
                     headers: { 
@@ -888,20 +1170,23 @@
             speedValue.textContent = speedSlider.value;
         });
         
-        // Đóng modal nếu click bên ngoài
+        // Close modals when clicking outside
         window.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.style.display = 'none';
+            }
             if (e.target === speedModal) {
                 speedModal.style.display = 'none';
             }
         });
         
-        // Tải danh sách giọng nói để sẵn sàng cho Web Speech API
+        // Initialize Web Speech API voices
         window.speechSynthesis.onvoiceschanged = () => {
             const voices = window.speechSynthesis.getVoices();
             console.log('Loaded voices:', voices.length);
         };
         
-        // Thêm thông báo khi trang web đã sẵn sàng
+        // Welcome message
         window.addEventListener('load', () => {
             addMessage('Trợ lý ảo Mít đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
         });
