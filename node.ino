@@ -7,6 +7,9 @@
 // Khai báo LCD với địa chỉ I2C (thay đổi nếu cần)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+// Định nghĩa pin đèn LED - Sử dụng D5 (GPIO14) cho đèn LED ngoài trên breadboard
+const int LED_PIN = D5;  // D5 tương ứng với GPIO14 trên ESP8266 NodeMCU
+
 // Cấu hình WiFi
 const char* ssid = "60 DO CUNG";
 const char* password = "0903477114";
@@ -18,12 +21,82 @@ const String defaultCity = "Hanoi";
 // Pin microphone (không sử dụng trong mã này, nhưng giữ lại để tương thích)
 const int microphonePin = A0;
 
+// Trạng thái hiển thị
+enum DisplayState {
+  READY,
+  LISTENING,
+  ANSWERED
+};
+
+DisplayState currentState = READY;
+unsigned long stateChangeTime = 0;
+bool forceStateUpdate = false;  // Cờ báo hiệu khi có lệnh cập nhật trạng thái mới
+
 // Khai báo hàm getWeather trước khi sử dụng
 String getWeather(String city, int retries = 2);
 
+// Hàm hiển thị trạng thái
+void updateDisplayState(DisplayState state) {
+  currentState = state;
+  stateChangeTime = millis();
+  forceStateUpdate = true;  // Đánh dấu rằng cần cập nhật ngay lập tức
+  
+  switch (state) {
+    case READY:
+      lcd.clear();
+      lcd.print("San sang nhan");
+      lcd.setCursor(0, 1);
+      lcd.print("lenh...");
+      digitalWrite(LED_PIN, LOW);
+      break;
+    case LISTENING:
+      lcd.clear();
+      lcd.print("Da lang nghe");
+      lcd.setCursor(0, 1);
+      lcd.print("thanh cong...");
+      digitalWrite(LED_PIN, HIGH);
+      break;
+    case ANSWERED:
+      lcd.clear();
+      lcd.print("Da tra loi");
+      lcd.setCursor(0, 1);
+      lcd.print("thanh cong...");
+      
+      // Nhấp nháy đèn LED
+      for (int i = 0; i < 5; i++) {
+        digitalWrite(LED_PIN, HIGH);
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
+        delay(100);
+      }
+      break;
+  }
+  
+  // Gửi phản hồi để xác nhận đã cập nhật trạng thái
+  Serial.print("LCD state updated to: ");
+  switch(state) {
+    case READY:
+      Serial.println("READY");
+      break;
+    case LISTENING:
+      Serial.println("LISTENING");
+      break;
+    case ANSWERED:
+      Serial.println("ANSWERED");
+      break;
+  }
+}
+
 void setup() {
+  // Khởi tạo Serial với tốc độ cao để cải thiện giao tiếp
   Serial.begin(115200);
+  Serial.println("\nESP8266 Starting...");
+  
   Wire.begin(D2, D1); // SDA = D2, SCL = D1 trên ESP8266 (có thể thay đổi tùy board)
+  
+  // Khởi tạo LED - Sử dụng LED ngoài trên breadboard
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
   
   // Khởi tạo LCD
   lcd.init();
@@ -46,23 +119,46 @@ void setup() {
     lcd.print("Da ket noi WiFi");
     lcd.setCursor(0, 1);
     lcd.print(WiFi.localIP().toString());
+    
+    // Thông báo qua Serial
+    Serial.println("WiFi connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    
     delay(2000);
   } else {
     lcd.clear();
     lcd.print("Khong ket noi WiFi");
+    Serial.println("WiFi connection failed");
     delay(2000);
   }
 
-  lcd.clear();
-  lcd.print("San sang nhan");
-  lcd.setCursor(0, 1);
-  lcd.print("lenh...");
+  updateDisplayState(READY);
+  
+  // Thông báo rằng ESP8266 đã sẵn sàng nhận lệnh
+  Serial.println("ESP8266 Ready - Waiting for commands");
 }
 
 void loop() {
+  // Kiểm tra nếu cần chuyển về trạng thái sẵn sàng sau khi đã trả lời
+  unsigned long currentTime = millis();
+  
+  if (currentState == ANSWERED && currentTime - stateChangeTime > 2000) {
+    updateDisplayState(READY);
+  }
+  
+  // Xử lý dữ liệu từ Serial
+  processSerialCommands();
+}
+
+void processSerialCommands() {
   if (Serial.available()) {
     String message = Serial.readStringUntil('\n');
     message.trim();
+    
+    // Ghi lại lệnh nhận được để debug
+    Serial.print("Received command: ");
+    Serial.println(message);
     
     if (message.startsWith("WEATHER:")) {
       String city = message.substring(8);
@@ -85,6 +181,15 @@ void loop() {
       String weatherInfo = getWeather(city);
       Serial.println("WEATHER_RESPONSE:" + weatherInfo);
       displayOnLCD(weatherInfo);
+    } else if (message == "STATE:LISTENING") {
+      Serial.println("Changing state to LISTENING");
+      updateDisplayState(LISTENING);
+    } else if (message == "STATE:ANSWERED") {
+      Serial.println("Changing state to ANSWERED");
+      updateDisplayState(ANSWERED);
+    } else if (message == "STATE:READY") {
+      Serial.println("Changing state to READY");
+      updateDisplayState(READY);
     } else {
       displayOnLCD(message);
     }

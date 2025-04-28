@@ -4,6 +4,8 @@ from command_processor import process_command
 import logging
 import os
 import time
+import serial
+import threading
 from gtts import gTTS
 from config import SPEECH_RATE
 import pygame
@@ -23,33 +25,85 @@ if not os.path.exists(AUDIO_DIR):
     os.makedirs(AUDIO_DIR)
 
 # Định nghĩa đường dẫn đến file âm thanh beep
-TEMP_DIR = "temp_audio"
-BEEP_SOUND = os.path.join(TEMP_DIR, "beep.wav")
+BEEP_SOUND = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'audio', 'beep.mp3')
 
-# Tạo file âm thanh "beep" nếu chưa tồn tại
-def create_beep_sound():
-    if not os.path.exists(TEMP_DIR):
-        os.makedirs(TEMP_DIR)
-    if not os.path.exists(BEEP_SOUND):
-        try:
-            import numpy as np
-            import wave
-            sample_rate = 44100
-            duration = 0.3
-            frequency = 880
-            t = np.linspace(0, duration, int(sample_rate * duration), False)
-            audio = 0.7 * np.sin(2 * np.pi * frequency * t)
-            audio = (audio * 32767).astype(np.int16)
-            with wave.open(BEEP_SOUND, 'w') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(sample_rate)
-                wf.writeframes(audio.tobytes())
-            logging.info(f"Đã tạo file âm thanh beep: {BEEP_SOUND}")
-        except ImportError:
-            logging.warning("Không thể tạo file âm thanh beep. Numpy hoặc wave không được cài đặt.")
-        except Exception as e:
-            logging.error(f"Lỗi khi tạo file âm thanh beep: {e}")
+# Biến để lưu kết nối serial
+ser = None
+serial_lock = threading.Lock()
+
+# Kết nối với ESP8266 qua cổng serial
+def connect_to_esp():
+    global ser
+    try:
+        # Tìm cổng COM phù hợp - thử qua nhiều cổng phổ biến
+        possible_ports = ['COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'COM10', 'COM11', 'COM12']
+        
+        for port in possible_ports:
+            try:
+                # Thử mở cổng và đóng lại để kiểm tra
+                test_ser = serial.Serial(port, 115200, timeout=1)
+                test_ser.close()
+                
+                # Nếu không lỗi, mở lại kết nối và sử dụng
+                ser = serial.Serial(port, 115200, timeout=1)
+                time.sleep(2)  # Đợi ESP8266 khởi động lại sau khi kết nối Serial
+                logging.info(f"Đã kết nối với ESP8266 qua cổng {port}")
+                
+                # Gửi lệnh kiểm tra
+                with serial_lock:
+                    test_command = "STATE:READY\n"
+                    ser.write(test_command.encode())
+                    time.sleep(0.5)
+                    response = ser.readline().decode('utf-8', errors='ignore').strip()
+                    if response:
+                        logging.info(f"ESP8266 phản hồi: {response}")
+                
+                return True
+            except Exception as e:
+                logging.warning(f"Không thể kết nối với cổng {port}: {e}")
+                continue
+        
+        logging.warning("Không thể kết nối với ESP8266 trên bất kỳ cổng nào")
+        return False
+    except Exception as e:
+        logging.error(f"Lỗi tổng thể khi kết nối với ESP8266: {e}")
+        return False
+
+# Gửi trạng thái đến ESP8266
+def send_state_to_esp(state):
+    global ser
+    if ser is None or not ser.is_open:
+        if not connect_to_esp():
+            logging.error("Không thể kết nối với ESP8266")
+            return False
+    
+    try:
+        with serial_lock:
+            command = f"STATE:{state}\n"
+            # Gửi lệnh và đảm bảo dữ liệu được ghi
+            ser.write(command.encode())
+            ser.flush()
+            time.sleep(0.1)  # Đợi một chút để ESP8266 xử lý
+            logging.info(f"Đã gửi trạng thái {state} đến ESP8266")
+            
+            # Đọc phản hồi để xác nhận ESP8266 đã nhận được lệnh
+            response = ser.readline().decode('utf-8', errors='ignore').strip()
+            if response:
+                logging.info(f"ESP8266 phản hồi sau khi gửi trạng thái: {response}")
+            
+        return True
+    except Exception as e:
+        logging.error(f"Lỗi khi gửi trạng thái đến ESP8266: {e}")
+        ser = None  # Đánh dấu mất kết nối
+        return False
+
+# Kiểm tra kết nối ESP8266 định kỳ
+def check_esp_connection():
+    global ser
+    while True:
+        if ser is None or not ser.is_open:
+            connect_to_esp()
+        time.sleep(30)  # Kiểm tra mỗi 30 giây
 
 # Phát âm thanh beep
 def play_beep():
@@ -75,6 +129,10 @@ def process():
     data = request.json
     logging.info(f"Request data: {data}")
     query = data.get('query', '')
+    
+    # Gửi trạng thái đang lắng nghe đến ESP8266
+    send_state_to_esp("LISTENING")
+    
     response = process_command(query)
     logging.info(f"Response: {response}")
 
@@ -89,17 +147,37 @@ def process():
         if not os.path.exists(audio_dir_path):
             os.makedirs(audio_dir_path)
         audio_path = os.path.join(audio_dir_path, audio_filename)
-        # Sử dụng tham số slow để điều chỉnh tốc độ nói dựa trên SPEECH_RATE
-        is_slow = SPEECH_RATE <= 0.8
+        # Sử dụng tham số slow=False để đảm bảo tốc độ nhanh hơn
+        is_slow = False  # Luôn đặt là False để tăng tốc độ phản hồi
         tts = gTTS(text=response, lang='vi', slow=is_slow)
         tts.save(audio_path)
         audio_url = f"/audio/{audio_filename}"
         logging.info(f"Đã tạo file âm thanh: {audio_path} với tốc độ {SPEECH_RATE}")
+        
+        # Gửi trạng thái đã trả lời đến ESP8266
+        send_state_to_esp("ANSWERED")
+        
     except Exception as e:
         logging.error(f"Lỗi khi tạo file âm thanh: {e}")
         audio_url = None
-
+        # Nếu không tạo được file âm thanh, vẫn phải gửi trạng thái đã trả lời
+        send_state_to_esp("ANSWERED")
+    
     return jsonify({'response': response, 'audio_url': audio_url})
+
+@app.route('/update_lcd_state', methods=['POST'])
+def update_lcd_state():
+    data = request.json
+    state = data.get('state')
+    
+    if state not in ["READY", "LISTENING", "ANSWERED"]:
+        return jsonify({'success': False, 'message': 'Trạng thái không hợp lệ'}), 400
+    
+    success = send_state_to_esp(state)
+    if success:
+        return jsonify({'success': True, 'message': f'Đã cập nhật trạng thái LCD thành {state}'})
+    else:
+        return jsonify({'success': False, 'message': 'Không thể kết nối với ESP8266'}), 500
 
 @app.route('/audio/<filename>', methods=['GET'])
 def serve_audio(filename):
@@ -133,6 +211,15 @@ def get_speech_rate():
     return jsonify({'rate': SPEECH_RATE})
 
 if __name__ == "__main__":
+    # Thử kết nối với ESP8266 khi khởi động
+    connect_to_esp()
+    
+    # Bắt đầu thread kiểm tra kết nối ESP8266 định kỳ
+    check_thread = threading.Thread(target=check_esp_connection, daemon=True)
+    check_thread.start()
+    
+    # Gửi trạng thái sẵn sàng ban đầu
+    send_state_to_esp("READY")
+    
     logging.info("Starting Flask server on port 5000")
-    create_beep_sound()
     app.run(debug=True, port=5000)

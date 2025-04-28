@@ -12,7 +12,7 @@ WAKE_WORDS = ["hey mít", "hây mít", "hey mit", "hay mit", "hây mis", "hey m�
              "mít ơi", "mit ơi", "xin chào mít", "chào mít", "mít", "mit"]
 waiting_for_command = False
 REQUIRE_WAKE_WORD = False
-SPEECH_RATE = 1.0
+SPEECH_RATE = 1.2  # Tăng tốc độ từ 1.0 lên 1.2
 
 # API Keys
 OPENWEATHERMAP_API_KEY = "292afcea31e70049e0995db453d7fca6"
