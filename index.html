@@ -647,192 +647,9 @@
                 font-size: 12px;
             }
         }
-
-        /* Connection overlay */
-        #connectionOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 200;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .connection-form {
-            background: linear-gradient(135deg, #2a2a42, #1a1a2e);
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .connection-form h2 {
-            color: #64ffda;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 24px;
-        }
-
-        .connection-form label {
-            color: white;
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .connection-form input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border-radius: 8px;
-        }
-
-        .connection-form input:focus {
-            outline: none;
-            border-color: #64ffda;
-            box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
-        }
-
-        .connection-form button {
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            width: 100%;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-
-        .connection-form button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .servers-list {
-            margin-bottom: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .server-item {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .server-item:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .server-name {
-            font-weight: bold;
-            color: #64ffda;
-        }
-
-        .server-ip {
-            font-size: 14px;
-            color: #ccc;
-        }
-
-        .auto-detect-servers {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .auto-detect-btn {
-            background: transparent;
-            border: 1px solid #64ffda;
-            color: #64ffda;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .auto-detect-btn:hover {
-            background: rgba(100, 255, 218, 0.1);
-        }
-
-        .scan-spinner {
-            display: inline-block;
-            width: 15px;
-            height: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #64ffda;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body>
-    <!-- Connection Overlay -->
-    <div id="connectionOverlay">
-        <div class="connection-form">
-            <h2>Kết nối đến máy chủ trợ lý</h2>
-            
-            <div class="auto-detect-servers">
-                <button id="autoDetectBtn" class="auto-detect-btn">
-                    <span id="scanSpinner" style="display: none;" class="scan-spinner"></span>
-                    Quét máy chủ tự động
-                </button>
-            </div>
-            
-            <div id="serversList" class="servers-list" style="display: none;">
-                <!-- Server items will be added here -->
-            </div>
-            
-            <form id="connectionForm">
-                <div>
-                    <label for="serverAddressInput">Địa chỉ máy chủ:</label>
-                    <input type="text" id="serverAddressInput" placeholder="Nhập IP hoặc tên máy chủ (vd: 192.168.1.100)" required>
-                </div>
-                
-                <div>
-                    <label for="serverPortInput">Cổng:</label>
-                    <input type="number" id="serverPortInput" placeholder="5000" value="5000" required>
-                </div>
-                
-                <div>
-                    <label for="serverProtocolInput">Giao thức:</label>
-                    <select id="serverProtocolInput">
-                        <option value="http">HTTP</option>
-                        <option value="https">HTTPS</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label for="serverPasswordInput">Mật khẩu (nếu cần):</label>
-                    <input type="password" id="serverPasswordInput" placeholder="Nhập mật khẩu máy chủ">
-                </div>
-                
-                <div class="api-mode" style="margin-top: 15px;">
-                    <label><input type="checkbox" id="publicAPIMode"> Chế độ API công cộng (sử dụng khi không có máy chủ riêng)</label>
-                </div>
-                
-                <button type="submit">Kết nối</button>
-            </form>
-        </div>
-    </div>
-    
     <div id="canvas-container">
         <div id="robot-container">
             <div class="robot-head">
@@ -933,8 +750,6 @@
         
         // API URL from localStorage or default
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
-        let serverPassword = localStorage.getItem('mitServerPassword') || '';
-        let publicAPIMode = localStorage.getItem('publicAPIMode') === 'true';
         
         // Speech rate
         let speechRate = localStorage.getItem('speechRate') || 1.0;
@@ -949,225 +764,7 @@
         const robotLegRight = document.querySelector('.robot-leg.right');
         const robotBody = document.querySelector('.robot-body');
         const robotHead = document.querySelector('.robot-head');
-        const connectionOverlay = document.getElementById('connectionOverlay');
-        const connectionForm = document.getElementById('connectionForm');
-        const serverAddressInput = document.getElementById('serverAddressInput');
-        const serverPortInput = document.getElementById('serverPortInput');
-        const serverPasswordInput = document.getElementById('serverPasswordInput');
-        const autoDetectBtn = document.getElementById('autoDetectBtn');
-        const serversList = document.getElementById('serversList');
-        const scanSpinner = document.getElementById('scanSpinner');
-        const serverProtocolInput = document.getElementById('serverProtocolInput');
-        const publicAPIModeCheckbox = document.getElementById('publicAPIMode');
         
-        // Set initial values from localStorage
-        if (localStorage.getItem('serverProtocol')) {
-            serverProtocolInput.value = localStorage.getItem('serverProtocol');
-        }
-        publicAPIModeCheckbox.checked = publicAPIMode;
-        
-        // Check connection settings
-        function checkConnection() {
-            if (publicAPIMode) {
-                // Nếu đang ở chế độ API công cộng, không cần kết nối đến server riêng
-                connectionOverlay.style.display = 'none';
-                loadPublicSounds();
-                addMessage('Đã kích hoạt chế độ API công cộng!', false);
-                return;
-            }
-            
-            // Nếu có apiUrl đã lưu, thử kết nối
-            if (apiUrl !== 'http://localhost:5000') {
-                // Thử xác minh kết nối
-                fetch(`${apiUrl}/get_server_info`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        ...(serverPassword ? { 'Authorization': `Bearer ${serverPassword}` } : {})
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Kết nối thành công
-                        connectionOverlay.style.display = 'none';
-                        loadBeepSound();
-                        addMessage('Kết nối thành công đến máy chủ trợ lý!', false);
-                    } else {
-                        // Kết nối thất bại
-                        connectionOverlay.style.display = 'flex';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error connecting to server:', error);
-                    connectionOverlay.style.display = 'flex';
-                });
-            } else {
-                // Không có kết nối đã lưu
-                connectionOverlay.style.display = 'flex';
-            }
-        }
-        
-        // Load public sound resources
-        function loadPublicSounds() {
-            // Sử dụng đường dẫn raw từ GitHub repository của bạn
-            beepSound = new Audio('https://raw.githubusercontent.com/NNH21/bot_smart/main/audio/beep.mp3');
-            errorSound = new Audio('https://raw.githubusercontent.com/NNH21/bot_smart/main/audio/error.mp3');
-        }
-        
-        // Auto-detect servers on the network
-        autoDetectBtn.addEventListener('click', async function() {
-            scanSpinner.style.display = 'inline-block';
-            autoDetectBtn.disabled = true;
-            serversList.innerHTML = ''; // Clear previous results
-            serversList.style.display = 'none';
-            
-            try {
-                // Use the local network IP range
-                const baseIp = '192.168.1.';
-                let foundServers = [];
-                
-                // If on local machine, also check localhost
-                try {
-                    const localhostResponse = await fetch('http://localhost:5000/get_server_info', { 
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    
-                    if (localhostResponse.ok) {
-                        const data = await localhostResponse.json();
-                        foundServers.push({
-                            name: data.server_name || 'Localhost',
-                            ip: '127.0.0.1',
-                            port: data.port || 5000,
-                            requiresPassword: data.requires_password || false
-                        });
-                    }
-                } catch (e) {
-                    console.log('Localhost server not found');
-                }
-                
-                // Try to find servers on the network (this is a simplified scan)
-                const promises = [];
-                for (let i = 1; i <= 10; i++) {
-                    const ip = baseIp + i;
-                    const promise = fetch(`http://${ip}:5000/get_server_info`, { 
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' },
-                        signal: AbortSignal.timeout(500) // Timeout after 500ms
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            return response.json().then(data => {
-                                foundServers.push({
-                                    name: data.server_name || `Server ${i}`,
-                                    ip: ip,
-                                    port: data.port || 5000,
-                                    requiresPassword: data.requires_password || false
-                                });
-                            });
-                        }
-                    })
-                    .catch(() => {}); // Ignore errors
-                    
-                    promises.push(promise);
-                }
-                
-                // Wait for all scans to complete
-                await Promise.allSettled(promises);
-                
-                // Display found servers
-                if (foundServers.length > 0) {
-                    serversList.style.display = 'block';
-                    foundServers.forEach(server => {
-                        const serverItem = document.createElement('div');
-                        serverItem.className = 'server-item';
-                        serverItem.innerHTML = `
-                            <div class="server-name">${server.name}</div>
-                            <div class="server-ip">${server.ip}:${server.port}</div>
-                        `;
-                        serverItem.addEventListener('click', () => {
-                            serverAddressInput.value = server.ip;
-                            serverPortInput.value = server.port;
-                            if (server.requiresPassword) {
-                                serverPasswordInput.focus();
-                            }
-                        });
-                        serversList.appendChild(serverItem);
-                    });
-                }
-            } catch (error) {
-                console.error('Error scanning for servers:', error);
-            } finally {
-                scanSpinner.style.display = 'none';
-                autoDetectBtn.disabled = false;
-            }
-        });
-        
-        // Connection form submission
-        connectionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (publicAPIModeCheckbox.checked) {
-                // Nếu chọn chế độ API công cộng
-                publicAPIMode = true;
-                localStorage.setItem('publicAPIMode', 'true');
-                connectionOverlay.style.display = 'none';
-                loadPublicSounds();
-                addMessage('Đã kích hoạt chế độ API công cộng!', false);
-                return;
-            }
-            
-            // Lấy thông tin kết nối từ form
-            const protocol = serverProtocolInput.value;
-            const serverAddress = serverAddressInput.value.trim();
-            const serverPort = serverPortInput.value.trim();
-            const password = serverPasswordInput.value.trim();
-            
-            apiUrl = `${protocol}://${serverAddress}:${serverPort}`;
-            serverPassword = password;
-            publicAPIMode = false;
-            
-            // Lưu vào localStorage
-            localStorage.setItem('mitApiUrl', apiUrl);
-            localStorage.setItem('serverProtocol', protocol);
-            localStorage.setItem('publicAPIMode', 'false');
-            
-            if (password) {
-                localStorage.setItem('mitServerPassword', password);
-            } else {
-                localStorage.removeItem('mitServerPassword');
-            }
-            
-            // Xác minh kết nối
-            fetch(`${apiUrl}/get_server_info`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    ...(password ? { 'Authorization': `Bearer ${password}` } : {})
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    // Kết nối thành công
-                    connectionOverlay.style.display = 'none';
-                    loadBeepSound();
-                    addMessage('Kết nối thành công đến máy chủ trợ lý!', false);
-                } else {
-                    addMessage('Kết nối thất bại. Vui lòng kiểm tra địa chỉ và mật khẩu.', false);
-                }
-            })
-            .catch(error => {
-                console.error('Error connecting to server:', error);
-                addMessage(`Lỗi kết nối: ${error.message}`, false);
-            });
-        });
-        
-        // Load beep sound from the server
-        function loadBeepSound() {
-            beepSound = new Audio(`${apiUrl}/audio/beep.mp3`);
-            errorSound = new Audio(`${apiUrl}/audio/error.mp3`);
-        }
-
         // Create stars for the background
         function createStars() {
             const container = document.getElementById('canvas-container');
@@ -1250,18 +847,12 @@
         
         // Send state to ESP8266 via API
         function updateLcdStatus(state) {
-            if (publicAPIMode) {
-                // Không cập nhật LCD trong chế độ API công cộng
-                return;
-            }
-            
             try {
                 fetch(`${apiUrl}/update_lcd_state`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        ...(serverPassword ? { 'Authorization': `Bearer ${serverPassword}` } : {})
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ state: state })
                 })
@@ -1347,13 +938,8 @@
         // Process command
         async function processCommand(text) {
             try {
-                console.log('Sending request with query:', text);
-                
-                if (publicAPIMode) {
-                    // Sử dụng API công cộng khi ở chế độ này
-                    processCommandWithPublicAPI(text);
-                    return;
-                }
+                console.log('Sending request to server with query:', text);
+                console.log('Using API URL:', apiUrl);
                 
                 updateLcdStatus("LISTENING");
                 
@@ -1361,8 +947,7 @@
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        ...(serverPassword ? { 'Authorization': `Bearer ${serverPassword}` } : {})
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ query: text })
                 });
@@ -1389,28 +974,10 @@
                 speak(audioUrl, result, action);
             } catch (error) {
                 console.error('Error connecting to server:', error.message);
-                addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra lại kết nối.');
+                addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
                 speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
                 errorSound.play();
                 updateLcdStatus("READY");
-            }
-        }
-        
-        // Xử lý câu lệnh thông qua API công cộng
-        async function processCommandWithPublicAPI(text) {
-            try {
-                startAnimation('speak');
-                
-                // Sử dụng Web Speech API trực tiếp thay vì gọi API bên ngoài
-                const response = "Xin lỗi, chức năng API công cộng chưa được cài đặt hoàn chỉnh. Vui lòng kết nối đến máy chủ trợ lý.";
-                
-                addMessage(response);
-                speakWithWebSpeechAPI(response, 'surprise');
-                
-            } catch (error) {
-                console.error('Error with public API:', error);
-                addMessage('Lỗi khi sử dụng API công cộng: ' + error.message);
-                speakWithWebSpeechAPI('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn.', 'surprise');
             }
         }
 
@@ -1621,9 +1188,6 @@
         
         // Welcome message
         window.addEventListener('load', () => {
-            // Kiểm tra kết nối trước
-            checkConnection();
-            
             addMessage('Trợ lý ảo Mis đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
         });
     </script>
