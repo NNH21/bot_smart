@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trợ lý ảo Mít</title>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=f1aU2sb6"></script>
     <style>
         * {
             margin: 0;
@@ -1338,7 +1339,7 @@
                     audio.play()
                         .catch(error => {
                             console.error('Lỗi khi phát âm thanh sau khi sẵn sàng:', error);
-                            speakWithWebSpeechAPI(textContent, action);
+                            createAndPlayAudio(textContent, action);
                         });
                 };
                 
@@ -1354,7 +1355,7 @@
                 audio.onerror = (e) => {
                     console.error('Lỗi khi tải âm thanh:', e);
                     console.error('Chi tiết lỗi:', audio.error);
-                    // Tạo và phát âm thanh trực tiếp qua gTTS API thay vì Web Speech API
+                    // Sử dụng ResponsiveVoice thay vì Google TTS API
                     createAndPlayAudio(textContent, action);
                 };
                 
@@ -1382,8 +1383,7 @@
                     audio.src = objectUrl;
                 })
                 .catch(error => {
-                    console.error('Lỗi khi fetch âm thanh:', error);
-                    // Sử dụng gTTS API thay vì Web Speech API khi gặp lỗi
+                    console.error('Lỗi khi fetch âm thanh từ server:', error);
                     createAndPlayAudio(textContent, action);
                 });
                 
@@ -1401,59 +1401,37 @@
                     clearTimeout(audioTimeout);
                 };
             } else {
-                // Sử dụng gTTS API thay vì Web Speech API
+                // Sử dụng ResponsiveVoice thay vì Web Speech API
                 createAndPlayAudio(textContent, action);
             }
         }
         
-        // Tạo và phát âm thanh trực tiếp từ Google TTS API
+        // Tạo và phát âm thanh với ResponsiveVoice
         function createAndPlayAudio(text, action) {
-            // Sử dụng Google TTS API để tạo âm thanh chất lượng cao
-            const googleTtsApiUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=vi&client=tw-ob`;
+            console.log('Sử dụng ResponsiveVoice để phát âm thanh');
+            startAnimation(action);
             
-            console.log('Sử dụng Google TTS API để phát âm thanh');
-            const audio = new Audio();
-            
-            audio.oncanplay = () => {
-                startAnimation(action);
-                audio.play()
-                    .catch(error => {
-                        console.error('Vẫn không thể phát âm thanh, chuyển sang Web Speech API:', error);
+            // Kiểm tra xem ResponsiveVoice đã sẵn sàng chưa
+            if (window.responsiveVoice && responsiveVoice.voiceSupport()) {
+                responsiveVoice.speak(text, "Vietnamese Female", {
+                    rate: speechRate,
+                    pitch: 1,
+                    onend: function() {
+                        setTimeout(() => {
+                            beepSound.play();
+                            stopAnimation();
+                            updateLcdStatus("READY");
+                        }, 1000);
+                    },
+                    onerror: function(e) {
+                        console.error('Lỗi ResponsiveVoice:', e);
                         speakWithWebSpeechAPI(text, action);
-                    });
-            };
-            
-            audio.onended = () => {
-                beepSound.play();
-                setTimeout(() => {
-                    stopAnimation();
-                    updateLcdStatus("READY");
-                }, 1000);
-            };
-            
-            audio.onerror = () => {
-                console.error('Lỗi khi sử dụng Google TTS API, chuyển sang Web Speech API');
+                    }
+                });
+            } else {
+                console.warn('ResponsiveVoice không khả dụng, sử dụng Web Speech API');
                 speakWithWebSpeechAPI(text, action);
-            };
-            
-            // Sử dụng proxy CORS để tránh vấn đề CORS
-            const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            audio.crossOrigin = 'anonymous';
-            
-            // Thử sử dụng trực tiếp trước
-            audio.src = googleTtsApiUrl;
-            
-            // Nếu gặp lỗi CORS, chuyển sang sử dụng proxy
-            audio.onerror = () => {
-                console.log('Thử sử dụng proxy CORS');
-                audio.src = corsProxyUrl + googleTtsApiUrl;
-                
-                // Nếu vẫn lỗi, chuyển sang Web Speech API
-                audio.onerror = () => {
-                    console.error('Không thể sử dụng Google TTS API với proxy, chuyển sang Web Speech API');
-                    speakWithWebSpeechAPI(text, action);
-                };
-            };
+            }
         }
         
         // Web Speech API fallback
@@ -1500,6 +1478,19 @@
             
             speechSynthesis.speak(utterance);
         }
+
+        // Đảm bảo ResponsiveVoice được khởi tạo
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.responsiveVoice) {
+                console.log('ResponsiveVoice đã sẵn sàng');
+                // Tải và lưu trữ trước giọng nói Vietnamese Female
+                if (responsiveVoice.voiceSupport()) {
+                    responsiveVoice.setDefaultVoice("Vietnamese Female");
+                }
+            } else {
+                console.warn('ResponsiveVoice chưa được tải');
+            }
+        });
 
         // Clear chat history
         document.getElementById('clearChatBtn').addEventListener('click', () => {
