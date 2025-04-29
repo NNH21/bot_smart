@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trợ lý ảo Mít</title>
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=f1aU2sb6"></script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=TwYULVs6"></script>
     <style>
         * {
             margin: 0;
@@ -846,6 +846,7 @@
         let beepSound = new Audio('audio/beep.mp3');
         let errorSound = new Audio('audio/error.mp3');
         let currentAnimation = null;
+        let audioPlayer = new Audio();
         
         // API URL from localStorage or default
         let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
@@ -1299,11 +1300,16 @@
                 
                 updateLcdStatus("ANSWERED");
                 
-                speak(audioUrl, result, action);
+                const isGitHubPages = window.location.hostname.includes('github.io');
+                if (isGitHubPages || !audioUrl) {
+                    createAndPlayAudio(result, action);
+                } else {
+                    speak(audioUrl, result, action);
+                }
             } catch (error) {
                 console.error('Error connecting to server:', error.message);
                 addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
-                speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
+                createAndPlayAudio('Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
                 errorSound.play();
                 updateLcdStatus("READY");
             }
@@ -1329,21 +1335,21 @@
             if (audioUrl) {
                 console.log('Đang tải âm thanh từ:', audioUrl);
                 
-                // Tạo đối tượng âm thanh với các xử lý lỗi tốt hơn
-                const audio = new Audio();
+                if (!audioPlayer.paused) {
+                    audioPlayer.pause();
+                }
                 
-                // Đăng ký sự kiện trước khi thiết lập nguồn
-                audio.oncanplay = () => {
+                audioPlayer.oncanplay = () => {
                     console.log('Âm thanh đã sẵn sàng để phát');
                     startAnimation(action);
-                    audio.play()
+                    audioPlayer.play()
                         .catch(error => {
                             console.error('Lỗi khi phát âm thanh sau khi sẵn sàng:', error);
                             createAndPlayAudio(textContent, action);
                         });
                 };
                 
-                audio.onended = () => {
+                audioPlayer.onended = () => {
                     console.log('Âm thanh đã phát xong');
                     beepSound.play();
                     setTimeout(() => {
@@ -1352,97 +1358,96 @@
                     }, 1000);
                 };
                 
-                audio.onerror = (e) => {
+                audioPlayer.onerror = (e) => {
                     console.error('Lỗi khi tải âm thanh:', e);
-                    console.error('Chi tiết lỗi:', audio.error);
-                    // Sử dụng ResponsiveVoice thay vì Google TTS API
+                    console.error('Chi tiết lỗi:', audioPlayer.error);
                     createAndPlayAudio(textContent, action);
                 };
                 
-                // Thêm cache control headers để tránh vấn đề cache
-                const fetchHeaders = new Headers({
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0',
-                    'Authorization': `Bearer ${authToken}`
-                });
+                if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.load();
+                } else {
+                    fetch(audioUrl, { 
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        mode: 'cors',
+                        credentials: 'include'
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const objectUrl = URL.createObjectURL(blob);
+                        audioPlayer.src = objectUrl;
+                        audioPlayer.load();
+                    })
+                    .catch(error => {
+                        console.error('Lỗi khi fetch âm thanh từ server:', error);
+                        createAndPlayAudio(textContent, action);
+                    });
+                }
                 
-                // Thiết lập nguồn với fetch API thay vì trực tiếp để xử lý CORS
-                fetch(audioUrl, { 
-                    headers: fetchHeaders,
-                    method: 'GET',
-                    mode: 'cors',
-                    credentials: 'include'
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const objectUrl = URL.createObjectURL(blob);
-                    audio.src = objectUrl;
-                })
-                .catch(error => {
-                    console.error('Lỗi khi fetch âm thanh từ server:', error);
-                    createAndPlayAudio(textContent, action);
-                });
-                
-                // Thêm timeout để chuyển sang phương pháp khác nếu âm thanh không tải được trong 5 giây
                 const audioTimeout = setTimeout(() => {
-                    if (!audio.duration) {
-                        console.warn('Âm thanh không tải được sau 5 giây, chuyển sang phương pháp khác');
-                        audio.src = '';
+                    if (audioPlayer.readyState < 3) {
+                        console.warn('Âm thanh không tải được sau 3 giây, chuyển sang phương pháp khác');
+                        audioPlayer.src = '';
                         createAndPlayAudio(textContent, action);
                     }
-                }, 5000);
+                }, 3000);
                 
-                // Xóa timeout nếu âm thanh tải thành công
-                audio.onloadedmetadata = () => {
+                audioPlayer.onloadeddata = () => {
                     clearTimeout(audioTimeout);
                 };
             } else {
-                // Sử dụng ResponsiveVoice thay vì Web Speech API
                 createAndPlayAudio(textContent, action);
             }
         }
         
-        // Tạo và phát âm thanh với ResponsiveVoice
         function createAndPlayAudio(text, action) {
             console.log('Sử dụng ResponsiveVoice để phát âm thanh');
             startAnimation(action);
             
-            // Kiểm tra xem ResponsiveVoice đã sẵn sàng chưa
             if (window.responsiveVoice && responsiveVoice.voiceSupport()) {
-                responsiveVoice.speak(text, "Vietnamese Female", {
-                    rate: speechRate,
-                    pitch: 1,
-                    onend: function() {
-                        setTimeout(() => {
-                            beepSound.play();
-                            stopAnimation();
-                            updateLcdStatus("READY");
-                        }, 1000);
-                    },
-                    onerror: function(e) {
-                        console.error('Lỗi ResponsiveVoice:', e);
-                        speakWithWebSpeechAPI(text, action);
-                    }
-                });
+                try {
+                    responsiveVoice.cancel();
+                    
+                    responsiveVoice.speak(text, "Vietnamese Female", {
+                        rate: parseFloat(speechRate),
+                        pitch: 1,
+                        onend: function() {
+                            setTimeout(() => {
+                                beepSound.play();
+                                stopAnimation();
+                                updateLcdStatus("READY");
+                            }, 1000);
+                        },
+                        onerror: function(e) {
+                            console.error('Lỗi ResponsiveVoice:', e);
+                            speakWithWebSpeechAPI(text, action);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Lỗi khi sử dụng ResponsiveVoice:', error);
+                    speakWithWebSpeechAPI(text, action);
+                }
             } else {
                 console.warn('ResponsiveVoice không khả dụng, sử dụng Web Speech API');
                 speakWithWebSpeechAPI(text, action);
             }
         }
         
-        // Web Speech API fallback
         function speakWithWebSpeechAPI(text, action) {
+            window.speechSynthesis.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = speechRate;
+            utterance.rate = parseFloat(speechRate);
             
             const voices = speechSynthesis.getVoices();
             console.log('Tất cả giọng nói có sẵn:', voices.map(v => `${v.name} (${v.lang})`).join(', '));
             
-            // Tìm giọng nữ tiếng Việt
             let voice = voices.find(v => v.lang === 'vi-VN' && v.name.includes('Female'));
             if (!voice) {
                 voice = voices.find(v => v.lang === 'vi-VN');
@@ -1451,7 +1456,6 @@
                 voice = voices.find(v => v.lang.startsWith('vi'));
             }
             if (!voice) {
-                // Tìm giọng Google nếu không có giọng Việt
                 voice = voices.find(v => v.name.includes('Google') && v.name.includes('Female'));
             }
             
@@ -1479,16 +1483,29 @@
             speechSynthesis.speak(utterance);
         }
 
-        // Đảm bảo ResponsiveVoice được khởi tạo
         document.addEventListener('DOMContentLoaded', function() {
+            beepSound.load();
+            errorSound.load();
+            
             if (window.responsiveVoice) {
                 console.log('ResponsiveVoice đã sẵn sàng');
-                // Tải và lưu trữ trước giọng nói Vietnamese Female
                 if (responsiveVoice.voiceSupport()) {
                     responsiveVoice.setDefaultVoice("Vietnamese Female");
+                    setTimeout(() => {
+                        responsiveVoice.speak("Xin chào", "Vietnamese Female", {volume: 0, onend: function() {
+                            console.log("ResponsiveVoice đã được khởi tạo thành công");
+                        }});
+                    }, 1000);
                 }
             } else {
                 console.warn('ResponsiveVoice chưa được tải');
+            }
+            
+            if ('onvoiceschanged' in speechSynthesis) {
+                speechSynthesis.onvoiceschanged = function() {
+                    const voices = speechSynthesis.getVoices();
+                    console.log(`Đã tải ${voices.length} giọng nói từ Web Speech API`);
+                };
             }
         });
 
@@ -1541,7 +1558,6 @@
                 localStorage.setItem('mitApiUrl', apiUrl);
                 addMessage(`Đã cập nhật URL API thành ${apiUrl}`, false);
                 
-                // Re-check authentication with new API URL
                 checkAuthentication();
             }
             settingsModal.style.display = 'none';
