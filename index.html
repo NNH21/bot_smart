@@ -753,7 +753,7 @@
         let currentAnimation = null;
         
         // API URL from localStorage or default
-        let apiUrl = localStorage.getItem('mitApiUrl') || 'http://localhost:5000';
+        let apiUrl = localStorage.getItem('mitApiUrl') || window.location.protocol + '//' + window.location.host;
         
         // Speech rate
         let speechRate = localStorage.getItem('speechRate') || 1.0;
