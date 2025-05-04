@@ -613,37 +613,40 @@
         /* Responsive design */
         @media (max-width: 768px) {
             .controls {
-                flex-direction: column;
+                top: 10px;
                 right: 10px;
-                gap: 8px;
+                flex-direction: column;
             }
             
             .controls button {
-                padding: 8px 12px;
+                padding: 8px 15px;
                 font-size: 14px;
             }
             
             .theme-selector {
+                top: 10px;
                 left: 10px;
             }
             
             .theme-selector select {
-                padding: 8px 12px;
+                padding: 8px 15px;
                 font-size: 14px;
             }
 
             #robot-container {
-                transform: translate(-50%, -50%) scale(0.8);
+                width: 220px;
+                height: 320px;
             }
         }
 
         @media (max-width: 480px) {
             #robot-container {
-                transform: translate(-50%, -50%) scale(0.6);
+                width: 180px;
+                height: 280px;
             }
 
             .controls button {
-                padding: 6px 10px;
+                padding: 8px 12px;
                 font-size: 12px;
             }
         }
@@ -653,13 +656,13 @@
     <div id="canvas-container">
         <div id="robot-container">
             <div class="robot-head">
-                <div class="robot-antenna"></div>
                 <div class="robot-face">
                     <div class="robot-eye left"></div>
                     <div class="robot-eye right"></div>
                     <div class="robot-mouth">
                         <div class="robot-mouth-inner"></div>
                     </div>
+                    <div class="robot-antenna"></div>
                 </div>
             </div>
             <div class="robot-body">
@@ -706,8 +709,13 @@
         <div class="modal-content">
             <h2>Cài đặt</h2>
             <div class="form-group">
-                <label for="apiUrlInput">URL API:</label>
-                <input type="text" id="apiUrlInput" placeholder="Nhập URL API (ví dụ: http://localhost:5000)">
+                <label for="apiUrlInput">URL API (Địa chỉ máy chủ xử lý):</label>
+                <input type="text" id="apiUrlInput" placeholder="http://localhost:5000">
+            </div>
+            <div class="form-group">
+                <label for="beepToggle">Âm thanh phản hồi:</label>
+                <input type="checkbox" id="beepToggle" checked>
+                <span>Bật tiếng beep khi bắt đầu và kết thúc lắng nghe</span>
             </div>
             <div class="modal-buttons">
                 <button id="saveSettingsBtn" class="save">Lưu</button>
@@ -721,14 +729,10 @@
         <div class="modal-content">
             <h2>Điều chỉnh tốc độ nói</h2>
             <div class="form-group">
-                <label for="speedSlider">Tốc độ (0.4 - 1.8):</label>
                 <div class="speed-slider-container">
-                    <input type="range" id="speedSlider" class="slider" min="0.4" max="1.8" step="0.1" value="1.0">
+                    <input type="range" min="0.5" max="2" step="0.1" value="1" class="slider" id="speedSlider">
                     <span class="speed-value" id="speedValue">1.0</span>
                 </div>
-                <p style="margin-top: 10px; color: #aaa; font-size: 14px;">
-                    Tốc độ càng thấp, giọng nói càng chậm. Tốc độ càng cao, giọng nói càng nhanh.
-                </p>
             </div>
             <div class="modal-buttons">
                 <button id="saveSpeedBtn" class="save">Lưu</button>
@@ -754,7 +758,12 @@
         // Speech rate
         let speechRate = localStorage.getItem('speechRate') || 1.0;
         
+        // Beep sound setting
+        let useBeepSound = localStorage.getItem('useBeepSound') !== 'false'; // Default to true
+        
         // DOM elements
+        const robotHead = document.querySelector('.robot-head');
+        const robotFace = document.querySelector('.robot-face');
         const robotMouth = document.querySelector('.robot-mouth');
         const robotEyeLeft = document.querySelector('.robot-eye.left');
         const robotEyeRight = document.querySelector('.robot-eye.right');
@@ -763,7 +772,6 @@
         const robotLegLeft = document.querySelector('.robot-leg.left');
         const robotLegRight = document.querySelector('.robot-leg.right');
         const robotBody = document.querySelector('.robot-body');
-        const robotHead = document.querySelector('.robot-head');
         
         // Create stars for the background
         function createStars() {
@@ -774,20 +782,46 @@
                 const star = document.createElement('div');
                 star.classList.add('star');
                 
-                // Random size between 1-3px
+                // Random size between 1px and 3px
                 const size = Math.random() * 2 + 1;
-                star.style.width = size + 'px';
-                star.style.height = size + 'px';
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
                 
                 // Random position
-                star.style.left = Math.random() * containerRect.width + 'px';
-                star.style.top = Math.random() * containerRect.height + 'px';
+                star.style.left = `${Math.random() * containerRect.width}px`;
+                star.style.top = `${Math.random() * containerRect.height}px`;
                 
-                // Animation
-                star.style.animation = `twinkle ${Math.random() * 3 + 2}s infinite alternate, floatUp ${Math.random() * 60 + 60}s linear infinite`;
-                star.style.animationDelay = Math.random() * 5 + 's';
+                // Random opacity
+                star.style.opacity = Math.random() * 0.7 + 0.3;
+                
+                // Add twinkle animation with random delay
+                star.style.animation = `twinkle ${Math.random() * 3 + 2}s infinite ${Math.random() * 5}s`;
                 
                 container.appendChild(star);
+            }
+            
+            // Add floating particles
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('star');
+                
+                // Smaller size for particles
+                const size = Math.random() + 0.5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * containerRect.width}px`;
+                particle.style.top = `${Math.random() * containerRect.height}px`;
+                
+                // Lower opacity
+                particle.style.opacity = Math.random() * 0.3 + 0.1;
+                
+                // Add floating animation
+                const duration = Math.random() * 60 + 30;
+                particle.style.animation = `floatUp ${duration}s linear infinite`;
+                
+                container.appendChild(particle);
             }
         }
         
@@ -803,79 +837,61 @@
             currentAnimation = type;
             
             switch(type) {
-                case 'speak':
-                    robotMouth.style.animation = 'talking 0.5s infinite';
+                case 'talking':
+                    robotMouth.style.animation = 'talking 0.3s infinite';
                     break;
-                case 'smile':
+                case 'thinking':
+                    robotEyeLeft.style.animation = 'thinking 1s infinite';
+                    robotEyeRight.style.animation = 'thinking 1s infinite';
+                    break;
+                case 'listening':
+                    robotEyeLeft.style.animation = 'surprised 1s infinite';
+                    robotEyeRight.style.animation = 'surprised 1s infinite';
+                    robotArmRight.style.animation = 'waving 2s infinite';
+                    break;
+                case 'happy':
                     robotMouth.style.animation = 'smiling 1s infinite';
                     break;
-                case 'wave':
-                    robotArmRight.style.animation = 'waving 1s infinite';
-                    robotMouth.style.animation = 'smiling 1s infinite';
-                    break;
-                case 'dance':
+                case 'dancing':
                     robotBody.style.animation = 'dancing 2s infinite';
-                    robotArmLeft.style.animation = 'waving 1s infinite';
-                    robotArmRight.style.animation = 'waving 1s infinite alternate';
+                    robotHead.style.animation = 'dancing 2s infinite reverse';
                     robotLegLeft.style.transform = 'rotate(5deg)';
                     robotLegRight.style.transform = 'rotate(-5deg)';
-                    robotMouth.style.animation = 'smiling 1s infinite';
-                    break;
-                case 'surprise':
-                    robotEyeLeft.style.animation = 'surprised 0.5s infinite';
-                    robotEyeRight.style.animation = 'surprised 0.5s infinite';
-                    robotMouth.style.height = '30px';
-                    robotMouth.style.borderRadius = '15px';
                     break;
             }
         }
         
         function stopAnimation() {
+            currentAnimation = null;
+            
             robotMouth.style.animation = '';
             robotEyeLeft.style.animation = '';
             robotEyeRight.style.animation = '';
             robotArmLeft.style.animation = '';
             robotArmRight.style.animation = '';
             robotBody.style.animation = '';
+            robotHead.style.animation = '';
             robotLegLeft.style.transform = '';
             robotLegRight.style.transform = '';
-            robotMouth.style.height = '';
-            robotMouth.style.borderRadius = '';
-            
-            currentAnimation = null;
         }
         
         // Send state to ESP8266 via API
         function updateLcdStatus(state) {
-            try {
-                fetch(`${apiUrl}/update_lcd_state`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ state: state })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        console.error(`Error updating LCD state: ${response.status}`);
-                    } else {
-                        console.log(`Updated LCD state to ${state}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error sending LCD state update:', error);
-                });
-            } catch (error) {
-                console.error('Error in updateLcdStatus:', error);
-            }
+            fetch(`${apiUrl}/api/lcd_status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ state }),
+            }).catch(error => console.error('Error updating LCD status:', error));
         }
 
         // Chat messages
         const chatContainer = document.getElementById('chatContainer');
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('chat-message', isUser ? 'user-message' : 'assistant-message');
+            messageDiv.classList.add('chat-message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'assistant-message');
             messageDiv.textContent = content;
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -886,187 +902,255 @@
         micBtn.addEventListener('click', toggleListening);
         
         if ('webkitSpeechRecognition' in window) {
+            // Create speech recognition object
             recognition = new webkitSpeechRecognition();
-            recognition.lang = 'vi-VN';
+            recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            recognition.onresult = (event) => {
-                const query = event.results[0][0].transcript;
-                addMessage(query, true);
-                processCommand(query);
+            recognition.lang = 'vi-VN';
+            
+            // Handle speech recognition results
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                addMessage(transcript, true);
+                processCommand(transcript);
             };
-
-            recognition.onerror = (event) => {
-                addMessage('Lỗi nhận diện giọng nói: ' + event.error);
-                isListening = false;
+            
+            // Handle speech recognition errors
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    const statusIndicator = document.getElementById('statusIndicator');
+                    statusIndicator.textContent = 'Không phát hiện giọng nói. Vui lòng thử lại.';
+                    statusIndicator.classList.add('visible');
+                    setTimeout(() => {
+                        statusIndicator.classList.remove('visible');
+                    }, 3000);
+                }
+                
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                updateLcdStatus("READY");
-            };
-
-            recognition.onend = () => {
                 isListening = false;
+                stopAnimation();
+                
+                // Play error sound
+                errorSound.play();
+            };
+            
+            // Handle speech recognition end
+            recognition.onend = function() {
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                setTimeout(() => {
-                    if (!speechSynthesis.speaking) {
-                        updateLcdStatus("READY");
-                    }
-                }, 500);
+                isListening = false;
+                stopAnimation();
             };
         } else {
-            addMessage('Trình duyệt không hỗ trợ nhận diện giọng nói.');
+            micBtn.textContent = '🎤 Không hỗ trợ';
+            micBtn.disabled = true;
+            addMessage("Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói. Vui lòng sử dụng Chrome hoặc Edge.", false);
         }
 
         function toggleListening() {
             if (isListening) {
                 recognition.stop();
-                isListening = false;
                 micBtn.textContent = '🎤 Bật Micro';
                 micBtn.classList.remove('active');
-                updateLcdStatus("READY");
+                isListening = false;
+                stopAnimation();
             } else {
-                recognition.start();
-                isListening = true;
-                micBtn.textContent = '🎤 Tắt Micro';
-                micBtn.classList.add('active');
-                updateLcdStatus("LISTENING");
+                try {
+                    recognition.start();
+                    
+                    // Play beep sound to indicate start of listening
+                    if (useBeepSound) {
+                        beepSound.play();
+                    }
+                    
+                    micBtn.textContent = '🎤 Đang nghe...';
+                    micBtn.classList.add('active');
+                    isListening = true;
+                    
+                    const statusIndicator = document.getElementById('statusIndicator');
+                    statusIndicator.textContent = 'Đang lắng nghe...';
+                    statusIndicator.classList.add('visible');
+                    setTimeout(() => {
+                        statusIndicator.classList.remove('visible');
+                    }, 3000);
+                    
+                    // Start listening animation
+                    startAnimation('listening');
+                    
+                    // Send status to ESP8266
+                    fetch(`${apiUrl}/api/status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ state: 'LISTENING' }),
+                    }).catch(error => console.error('Error updating status:', error));
+                    
+                } catch (e) {
+                    console.error('Error starting speech recognition:', e);
+                }
             }
         }
 
         // Process command
         async function processCommand(text) {
+            // Start thinking animation
+            startAnimation('thinking');
+            
+            // Send status to ESP8266
+            fetch(`${apiUrl}/api/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ state: 'PROCESSING' }),
+            }).catch(error => console.error('Error updating status:', error));
+            
             try {
-                console.log('Sending request to server with query:', text);
-                console.log('Using API URL:', apiUrl);
-                
-                updateLcdStatus("LISTENING");
-                
-                const response = await fetch(`${apiUrl}/process`, {
+                const response = await fetch(`${apiUrl}/api/command`, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ query: text })
+                    body: JSON.stringify({ command: text }),
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status} (${response.statusText})`);
+                    throw new Error(`HTTP error ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('Received response from server:', data);
+                addMessage(data.response, false);
                 
-                const result = data.response;
-                let audioUrl = data.audio_url;
+                // Play audio response
+                speak(data.audio_url, data.response, determineAction(text, data.response));
                 
-                if (audioUrl && !audioUrl.startsWith('http')) {
-                    audioUrl = `${apiUrl}${audioUrl}`;
-                }
-                
-                addMessage(result);
-                const action = determineAction(text, result);
-                
-                updateLcdStatus("ANSWERED");
-                
-                speak(audioUrl, result, action);
             } catch (error) {
-                console.error('Error connecting to server:', error.message);
-                addMessage('Lỗi kết nối với server: ' + error.message + '. Vui lòng kiểm tra server Flask có đang chạy không.');
-                speak(null, 'Lỗi kết nối. Vui lòng kiểm tra lại cài đặt API URL.', 'surprise');
-                errorSound.play();
-                updateLcdStatus("READY");
+                console.error('Error processing command:', error);
+                addMessage('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại.', false);
+                
+                // Try fallback response using Web Speech API
+                speakWithWebSpeechAPI('Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại.', 'sorry');
             }
         }
 
         // Determine robot action based on query and response
         function determineAction(query, response) {
-            const queryLower = query.toLowerCase();
-            if (queryLower.includes('bạn tên là gì') || queryLower.includes('bạn là ai')) {
-                return 'smile';
-            } else if (queryLower.includes('mở bài hát') || queryLower.includes('mở phim')) {
-                return 'dance';
-            } else if (queryLower.includes('mở trang')) {
-                return 'wave';
-            } else if (response.includes('không') || response.includes('lỗi')) {
-                return 'surprise';
+            const query_lower = query.toLowerCase();
+            const response_lower = response.toLowerCase();
+            
+            // Check for greeting or introduction
+            if (query_lower.includes('xin chào') || query_lower.includes('chào bạn') || 
+                query_lower.includes('hello') || query_lower.includes('hi') ||
+                query_lower.includes('là ai') || query_lower.includes('tên gì')) {
+                return 'happy';
             }
-            return 'speak';
+            
+            // Check for music or entertainment related
+            if (query_lower.includes('hát') || query_lower.includes('nhạc') || 
+                query_lower.includes('bài hát') || query_lower.includes('vui')) {
+                return 'dancing';
+            }
+            
+            // Check for negative or error responses
+            if (response_lower.includes('xin lỗi') || response_lower.includes('không thể') || 
+                response_lower.includes('lỗi') || response_lower.includes('try again')) {
+                return 'sorry';
+            }
+            
+            // Default is talking animation
+            return 'talking';
         }
 
         // Speech synthesis
         function speak(audioUrl, textContent, action) {
-            if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                let audioStarted = false;
+            // Start appropriate animation
+            startAnimation(action);
+            
+            // Create audio element
+            const audio = new Audio(audioUrl);
+            
+            // Play audio file from server
+            audio.onloadedmetadata = function() {
+                // Send status to ESP8266
+                fetch(`${apiUrl}/api/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: 'ANSWERED' }),
+                }).catch(error => console.error('Error updating status:', error));
                 
-                audio.onplay = () => {
-                    audioStarted = true;
-                    startAnimation(action);
-                };
-                
-                audio.onended = () => {
-                    beepSound.play();
-                    setTimeout(() => {
-                        stopAnimation();
-                    }, 1000);
-                };
-                
-                audio.onerror = (e) => {
-                    console.error('Error playing audio:', e);
-                    if (!audioStarted) {
-                        speakWithWebSpeechAPI(textContent, action);
-                    }
-                    updateLcdStatus("READY");
-                };
-                
-                audio.play().catch(error => {
-                    console.error('Error playing audio:', error);
-                    if (!audioStarted) {
-                        speakWithWebSpeechAPI(textContent, action);
-                    }
-                    updateLcdStatus("READY");
-                });
-            } else {
+                audio.play();
+            };
+            
+            audio.onerror = function() {
+                console.error('Error playing audio, falling back to Web Speech API');
                 speakWithWebSpeechAPI(textContent, action);
-            }
+            };
+            
+            audio.onended = function() {
+                stopAnimation();
+                
+                // Play beep sound after response
+                if (useBeepSound) {
+                    beepSound.play();
+                }
+            };
         }
         
         // Web Speech API fallback
         function speakWithWebSpeechAPI(text, action) {
+            if (!window.speechSynthesis) {
+                console.error('Speech synthesis not supported');
+                return;
+            }
+            
+            // Send status to ESP8266
+            fetch(`${apiUrl}/api/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ state: 'ANSWERED' }),
+            }).catch(error => console.error('Error updating status:', error));
+            
+            // Start appropriate animation
+            startAnimation(action);
+            
+            // Create speech synthesis utterance
             const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'vi-VN';
             utterance.rate = speechRate;
             
-            const voices = speechSynthesis.getVoices();
-            
-            // Find Vietnamese voice
-            let voice = voices.find(v => v.lang === 'vi-VN');
-            if (!voice) {
-                voice = voices.find(v => v.lang.startsWith('vi'));
+            // Find Vietnamese voice if available
+            let vietnameseVoice = null;
+            const voices = window.speechSynthesis.getVoices();
+            for (const voice of voices) {
+                if (voice.lang.includes('vi')) {
+                    vietnameseVoice = voice;
+                    break;
+                }
             }
             
-            if (voice) {
-                utterance.voice = voice;
-                utterance.lang = 'vi-VN';
-            } else {
-                console.warn('No Vietnamese voice found, using default voice');
-                utterance.lang = 'vi-VN';
+            if (vietnameseVoice) {
+                utterance.voice = vietnameseVoice;
             }
             
-            utterance.onstart = () => {
-                startAnimation(action);
+            // Handle speech end
+            utterance.onend = function() {
+                stopAnimation();
+                
+                // Play beep sound after response
+                if (useBeepSound) {
+                    beepSound.play();
+                }
             };
             
-            utterance.onend = () => {
-                beepSound.play();
-                setTimeout(() => {
-                    stopAnimation();
-                }, 1000);
-            };
-            
-            speechSynthesis.speak(utterance);
+            // Speak
+            window.speechSynthesis.speak(utterance);
         }
 
         // Clear chat history
@@ -1077,16 +1161,24 @@
         // Theme selection
         document.getElementById('themeSelect').addEventListener('change', (e) => {
             const theme = e.target.value;
-            if (theme === 'space') {
-                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
-            } else if (theme === 'forest') {
-                document.body.style.background = 'radial-gradient(circle, #2e462e 0%, #1a2e1a 100%)';
-            } else if (theme === 'ocean') {
-                document.body.style.background = 'radial-gradient(circle, #1a3c4e 0%, #0f2a3a 100%)';
-            } else if (theme === 'night') {
-                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
-            } else if (theme === 'tech') {
-                document.body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
+            const body = document.body;
+            
+            switch (theme) {
+                case 'space':
+                    body.style.background = 'radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%)';
+                    break;
+                case 'forest':
+                    body.style.background = 'radial-gradient(circle, #2d6a4f 0%, #1b4332 100%)';
+                    break;
+                case 'ocean':
+                    body.style.background = 'radial-gradient(circle, #1a508b 0%, #0b2545 100%)';
+                    break;
+                case 'night':
+                    body.style.background = 'radial-gradient(circle, #2c3e50 0%, #1a1a2a 100%)';
+                    break;
+                case 'tech':
+                    body.style.background = 'radial-gradient(circle, #3b4664 0%, #1d2030 100%)';
+                    break;
             }
         });
         
@@ -1096,8 +1188,10 @@
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const apiUrlInput = document.getElementById('apiUrlInput');
+        const beepToggle = document.getElementById('beepToggle');
         
         apiUrlInput.value = apiUrl;
+        beepToggle.checked = useBeepSound;
         
         settingsBtn.addEventListener('click', () => {
             settingsModal.style.display = 'block';
@@ -1108,13 +1202,15 @@
         });
         
         saveSettingsBtn.addEventListener('click', () => {
-            const newApiUrl = apiUrlInput.value.trim();
-            if (newApiUrl) {
-                apiUrl = newApiUrl;
-                localStorage.setItem('mitApiUrl', apiUrl);
-                addMessage(`Đã cập nhật URL API thành ${apiUrl}`, false);
-            }
+            apiUrl = apiUrlInput.value;
+            localStorage.setItem('mitApiUrl', apiUrl);
+            
+            useBeepSound = beepToggle.checked;
+            localStorage.setItem('useBeepSound', useBeepSound);
+            
             settingsModal.style.display = 'none';
+            
+            addMessage(`Đã cập nhật cài đặt. API URL: ${apiUrl}, Âm thanh beep: ${useBeepSound ? 'Bật' : 'Tắt'}`, false);
         });
         
         // Speed modal
@@ -1137,33 +1233,11 @@
         });
         
         saveSpeedBtn.addEventListener('click', () => {
-            const newSpeechRate = parseFloat(speedSlider.value);
-            if (newSpeechRate) {
-                speechRate = newSpeechRate;
-                localStorage.setItem('speechRate', speechRate);
-                
-                fetch(`${apiUrl}/set_speech_rate`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ rate: newSpeechRate })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addMessage(`Đã cập nhật tốc độ nói thành ${speechRate}`, false);
-                    } else {
-                        addMessage(`Lỗi: ${data.message}`, false);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating speech rate:', error);
-                    addMessage('Không thể kết nối với server để cập nhật tốc độ nói.', false);
-                });
-            }
+            speechRate = speedSlider.value;
+            localStorage.setItem('speechRate', speechRate);
             speedModal.style.display = 'none';
+            
+            addMessage(`Đã đặt tốc độ nói thành ${speechRate}x`, false);
         });
         
         speedSlider.addEventListener('input', () => {
@@ -1174,8 +1248,7 @@
         window.addEventListener('click', (e) => {
             if (e.target === settingsModal) {
                 settingsModal.style.display = 'none';
-            }
-            if (e.target === speedModal) {
+            } else if (e.target === speedModal) {
                 speedModal.style.display = 'none';
             }
         });
@@ -1183,12 +1256,12 @@
         // Initialize Web Speech API voices
         window.speechSynthesis.onvoiceschanged = () => {
             const voices = window.speechSynthesis.getVoices();
-            console.log('Loaded voices:', voices.length);
+            console.log('Available voices:', voices.length);
         };
         
         // Welcome message
         window.addEventListener('load', () => {
-            addMessage('Trợ lý ảo Mis đã sẵn sàng. Bạn có thể bắt đầu hỏi.', false);
+            addMessage('Trợ lý ảo Mis đã sẵn sàng. Bạn có thể bắt đầu hỏi bằng cách nhấn nút "Bật Micro" hoặc nói "Hey Mis" trực tiếp nếu bạn đã kết nối module ESP8266 với KY-038.', false);
         });
     </script>
 </body>
